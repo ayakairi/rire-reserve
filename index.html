@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rire リール｜ご予約</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Noto+Sans+JP:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --cream: #faf7f4; --warm: #f0e8df; --rose: #c4927a; --rose-dark: #a67560;
+  --rose-light: #e8cfc2; --brown: #6b4c3b; --text: #3d2b1f; --muted: #9a8276;
+  --white: #ffffff; --danger: #e07070; --sat: #5b7fd4;
+}
+body { background: var(--cream); font-family: 'Noto Sans JP', sans-serif; color: var(--text); min-height: 100vh; }
+.header { background: var(--white); border-bottom: 1px solid var(--rose-light); padding: 16px 24px; text-align: center; position: sticky; top: 0; z-index: 100; }
+.header-logo { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 300; letter-spacing: 0.15em; color: var(--brown); }
+.header-logo span { font-size: 11px; font-family: 'Noto Sans JP', sans-serif; font-weight: 300; color: var(--muted); display: block; letter-spacing: 0.2em; margin-top: 1px; }
+.admin-link { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--rose-light); cursor: pointer; }
+.admin-link:hover { color: var(--muted); }
+.steps { display: flex; justify-content: center; padding: 13px 20px; background: var(--white); border-bottom: 1px solid var(--warm); }
+.step { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 300; color: var(--muted); }
+.step.active { color: var(--rose); }
+.step.done { color: var(--rose-dark); }
+.step-num { width: 20px; height: 20px; border-radius: 50%; border: 1px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+.step.active .step-num { background: var(--rose); color: white; border-color: var(--rose); }
+.step.done .step-num { background: var(--rose-dark); color: white; border-color: var(--rose-dark); }
+.step-line { width: 20px; height: 1px; background: var(--rose-light); flex-shrink: 0; margin: 0 2px; }
+.content { max-width: 560px; margin: 0 auto; padding: 20px 12px 80px; }
+.section-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 300; letter-spacing: 0.1em; color: var(--brown); margin-bottom: 4px; }
+.section-sub { font-size: 11px; color: var(--muted); font-weight: 300; margin-bottom: 16px; }
+.cat-tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.cat-tab { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--rose-light); background: var(--white); font-size: 11px; color: var(--muted); cursor: pointer; font-weight: 300; transition: all 0.2s; }
+.cat-tab.active { background: var(--rose); border-color: var(--rose); color: white; }
+.menu-card { background: var(--white); border: 1px solid var(--warm); border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; overflow: hidden; }
+.menu-card:hover { border-color: var(--rose-light); box-shadow: 0 2px 10px rgba(196,146,122,0.1); }
+.menu-card.selected { border-color: var(--rose); background: #fdf5f2; }
+.menu-card-main { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; }
+.menu-name { font-size: 13px; font-weight: 400; color: var(--text); margin-bottom: 2px; }
+.menu-cat-label { font-size: 10px; color: var(--muted); font-weight: 300; }
+.menu-card-right { text-align: right; flex-shrink: 0; margin-left: 10px; }
+.menu-time { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+.menu-price { font-family: 'Cormorant Garamond', serif; font-size: 17px; color: var(--rose-dark); }
+.coupon-badge { font-size: 10px; background: #fff0eb; color: var(--rose); border: 1px solid var(--rose-light); border-radius: 4px; padding: 2px 6px; margin-top: 3px; display: inline-block; }
+.menu-detail { display: none; padding: 10px 16px 12px; font-size: 12px; color: var(--muted); font-weight: 300; line-height: 1.7; border-top: 1px solid var(--warm); }
+.menu-detail.open { display: block; }
+.detail-toggle { font-size: 10px; color: var(--rose); cursor: pointer; margin-top: 3px; display: inline-flex; align-items: center; gap: 3px; }
+.detail-toggle::after { content: '▼'; font-size: 8px; transition: transform 0.2s; }
+.detail-toggle.open::after { transform: rotate(180deg); }
+.cal-nav-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cal-month-label { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: var(--brown); letter-spacing: 0.08em; }
+.cal-nav-btn { background: none; border: 1px solid var(--warm); border-radius: 6px; color: var(--rose); cursor: pointer; font-size: 16px; padding: 4px 12px; transition: all 0.15s; }
+.cal-nav-btn:hover { background: var(--warm); }
+.cal-dow-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 3px; }
+.cal-dow { text-align: center; padding: 5px 2px; font-size: 10px; color: var(--muted); font-weight: 300; }
+.cal-dow.sun { color: var(--danger); }
+.cal-dow.sat { color: var(--sat); }
+.cal-body { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-cell { background: var(--white); border: 1px solid var(--warm); border-radius: 7px; min-height: 76px; padding: 5px 3px 4px; transition: border-color 0.15s; vertical-align: top; }
+.cal-cell.empty { background: transparent; border-color: transparent; min-height: 76px; }
+.cal-cell.closed { background: #f5f2f0; }
+.cal-cell.past { background: #f7f5f3; }
+.cal-cell.has-selected { border-color: var(--rose) !important; background: #fdf5f2; }
+.cal-day-num { font-size: 12px; font-weight: 400; color: var(--text); display: block; text-align: center; margin-bottom: 2px; }
+.cal-cell.sun .cal-day-num { color: var(--danger); }
+.cal-cell.sat .cal-day-num { color: var(--sat); }
+.cal-cell.past .cal-day-num { color: #ccc; }
+.cal-cell.today .cal-day-num { color: var(--rose-dark); font-weight: 700; }
+.close-badge { display: block; text-align: center; background: var(--danger); color: white; font-size: 9px; border-radius: 3px; padding: 2px 0; margin-top: 2px; font-weight: 300; }
+.cell-times { display: flex; flex-direction: column; gap: 2px; margin-top: 1px; }
+.cell-time { font-size: 11px; color: #3d9966; font-weight: 400; cursor: pointer; padding: 2px 3px; border-radius: 3px; transition: all 0.12s; text-align: center; line-height: 1.3; }
+.cell-time:hover { background: #dff2e9; color: #2a7a50; }
+.cell-time.selected { background: var(--rose); color: white; border-radius: 3px; }
+.sel-bar { background: var(--white); border: 1px solid var(--rose); border-radius: 8px; padding: 11px 14px; margin-bottom: 12px; display: none; align-items: center; justify-content: space-between; }
+.sel-bar.show { display: flex; }
+.sel-bar-text { font-size: 13px; color: var(--brown); font-weight: 400; }
+.sel-bar-clear { font-size: 11px; color: var(--muted); cursor: pointer; flex-shrink: 0; margin-left: 8px; }
+.sel-bar-clear:hover { color: var(--danger); }
+.form-group { margin-bottom: 12px; }
+.form-label { font-size: 11px; color: var(--muted); font-weight: 300; margin-bottom: 4px; display: block; }
+.form-label .req { color: var(--rose); margin-left: 2px; }
+.form-input { width: 100%; padding: 11px 13px; border: 1px solid var(--warm); border-radius: 8px; font-size: 14px; font-family: 'Noto Sans JP', sans-serif; font-weight: 300; background: var(--white); color: var(--text); outline: none; transition: border-color 0.15s; }
+.form-input:focus { border-color: var(--rose); }
+.form-input::placeholder { color: #ccc; }
+textarea.form-input { resize: vertical; min-height: 72px; }
+.confirm-card { background: var(--white); border: 1px solid var(--warm); border-radius: 10px; padding: 18px; margin-bottom: 14px; }
+.confirm-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid var(--warm); font-size: 13px; gap: 12px; }
+.confirm-row:last-child { border-bottom: none; }
+.confirm-label { color: var(--muted); font-weight: 300; font-size: 11px; flex-shrink: 0; }
+.confirm-value { color: var(--text); font-weight: 400; text-align: right; }
+.complete-wrap { text-align: center; padding: 48px 20px; }
+.complete-icon { width: 68px; height: 68px; border-radius: 50%; background: #fff5f0; border: 2px solid var(--rose-light); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 28px; }
+.complete-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--brown); margin-bottom: 10px; letter-spacing: 0.1em; }
+.complete-text { font-size: 13px; color: var(--muted); font-weight: 300; line-height: 2; }
+.btn-primary { width: 100%; padding: 14px; background: var(--rose); color: white; border: none; border-radius: 8px; font-size: 14px; font-family: 'Noto Sans JP', sans-serif; font-weight: 300; letter-spacing: 0.1em; cursor: pointer; transition: background 0.2s; }
+.btn-primary:hover { background: var(--rose-dark); }
+.btn-primary:disabled { background: #ddd; cursor: default; }
+.btn-back { width: 100%; padding: 12px; background: none; color: var(--muted); border: 1px solid var(--warm); border-radius: 8px; font-size: 13px; font-family: 'Noto Sans JP', sans-serif; font-weight: 300; cursor: pointer; margin-bottom: 8px; transition: border-color 0.15s; }
+.btn-back:hover { border-color: var(--muted); }
+.note { font-size: 11px; color: var(--muted); text-align: center; margin-top: 8px; font-weight: 300; line-height: 1.8; }
+.screen { display: none; }
+.screen.active { display: block; }
+.admin-wrap { max-width: 600px; margin: 0 auto; padding: 20px 14px 80px; }
+.admin-section { background: var(--white); border-radius: 10px; border: 1px solid var(--warm); padding: 18px; margin-bottom: 14px; }
+.admin-section-title { font-size: 13px; font-weight: 400; color: var(--brown); margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--warm); }
+.admin-date-picker { width: 100%; padding: 10px 13px; border: 1px solid var(--warm); border-radius: 8px; font-size: 14px; font-family: 'Noto Sans JP', sans-serif; color: var(--text); margin-bottom: 12px; outline: none; }
+.admin-date-picker:focus { border-color: var(--rose); }
+.slot-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-bottom: 12px; }
+.slot-item { padding: 9px 4px; text-align: center; border-radius: 7px; font-size: 12px; border: 1px solid var(--warm); cursor: pointer; transition: all 0.15s; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.slot-item.on { background: var(--rose); color: white; border-color: var(--rose); }
+.slot-item.off { background: var(--warm); color: #bbb; }
+.slot-item-status { font-size: 9px; }
+.slot-actions { display: flex; gap: 8px; }
+.btn-sm { padding: 8px 14px; border-radius: 6px; font-size: 12px; font-family: 'Noto Sans JP', sans-serif; font-weight: 300; cursor: pointer; transition: all 0.15s; border: none; }
+.btn-sm-outline { background: none; border: 1px solid var(--warm); color: var(--muted); }
+.btn-sm-outline:hover { border-color: var(--rose); color: var(--rose); }
+.btn-sm-primary { background: var(--rose); color: white; }
+.btn-sm-primary:hover { background: var(--rose-dark); }
+.btn-sm-danger { background: none; border: 1px solid var(--danger); color: var(--danger); }
+.booking-item { padding: 13px 0; border-bottom: 1px solid var(--warm); }
+.booking-item:last-child { border-bottom: none; }
+.booking-meta { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+.booking-name { font-size: 14px; color: var(--text); margin-bottom: 2px; }
+.booking-menu { font-size: 12px; color: var(--rose-dark); }
+.booking-actions { margin-top: 7px; }
+.empty-msg { text-align: center; color: var(--muted); font-size: 13px; padding: 20px; font-weight: 300; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--warm); flex-wrap: wrap; gap: 8px; }
+.settings-row:last-child { border-bottom: none; }
+.settings-label { font-size: 13px; color: var(--text); min-width: 160px; }
+.settings-input { flex: 1; min-width: 160px; padding: 8px 11px; border: 1px solid var(--warm); border-radius: 6px; font-size: 13px; font-family: 'Noto Sans JP', sans-serif; outline: none; }
+.settings-input:focus { border-color: var(--rose); }
+.login-wrap { max-width: 340px; margin: 80px auto; padding: 30px; background: var(--white); border-radius: 14px; border: 1px solid var(--warm); text-align: center; }
+.login-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--brown); margin-bottom: 6px; }
+.login-sub { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+.login-error { font-size: 12px; color: var(--danger); margin-top: 8px; }
+.tab-nav { display: flex; border-bottom: 1px solid var(--warm); margin-bottom: 16px; }
+.tab-btn { flex: 1; padding: 10px; font-size: 12px; background: none; border: none; color: var(--muted); cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-weight: 300; border-bottom: 2px solid transparent; transition: all 0.15s; }
+.tab-btn.active { color: var(--rose); border-bottom-color: var(--rose); }
+.badge { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 10px; background: var(--rose-light); color: var(--rose-dark); margin-left: 5px; }
+.loading-spinner { text-align: center; color: var(--muted); font-size: 12px; padding: 16px; }
+</style>
+</head>
+<body>
+<div id="customerView">
+  <div class="header">
+    <div class="header-logo">rire <span>リール｜トータルエステティックサロン</span></div>
+    <span class="admin-link" onclick="showAdminLogin()">管理</span>
+  </div>
+  <div class="steps" id="stepsBar">
+    <div class="step active" id="s1"><div class="step-num">1</div>メニュー</div>
+    <div class="step-line"></div>
+    <div class="step" id="s2"><div class="step-num">2</div>日時</div>
+    <div class="step-line"></div>
+    <div class="step" id="s3"><div class="step-num">3</div>お客様情報</div>
+    <div class="step-line"></div>
+    <div class="step" id="s4"><div class="step-num">4</div>確認</div>
+  </div>
+  <div class="content">
+    <!-- STEP 1: メニュー -->
+    <div class="screen active" id="screen1">
+      <div class="section-title">メニューを選ぶ</div>
+      <div class="section-sub">ご希望のメニューをお選びください</div>
+      <div class="cat-tabs">
+        <div class="cat-tab active" onclick="filterCat(this,'facial')">フェイシャル</div>
+        <div class="cat-tab" onclick="filterCat(this,'hair')">脱毛</div>
+        <div class="cat-tab" onclick="filterCat(this,'slim')">痩身</div>
+        <div class="cat-tab" onclick="filterCat(this,'yomogi')">よもぎ蒸し</div>
+        <div class="cat-tab" onclick="filterCat(this,'tone')">トーンヌール</div>
+      </div>
+      <div id="menuList"></div>
+      <button class="btn-primary" id="btn1" onclick="goStep(2)" disabled>次へ　→　日時を選ぶ</button>
+      <p class="note">※ 料金はすべて税込表示です</p>
+    </div>
+
+    <!-- STEP 2: 日時 -->
+    <div class="screen" id="screen2">
+      <div class="section-title">日時を選ぶ</div>
+      <div class="section-sub">カレンダーの時間をタップして選んでください</div>
+      <div class="sel-bar" id="selBar">
+        <span class="sel-bar-text" id="selBarText"></span>
+        <span class="sel-bar-clear" onclick="clearDateTime()">✕ クリア</span>
+      </div>
+      <div class="cal-nav-bar">
+        <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
+        <div class="cal-month-label" id="calMonthLabel"></div>
+        <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
+      </div>
+      <div class="cal-dow-row">
+        <div class="cal-dow sun">日</div><div class="cal-dow">月</div><div class="cal-dow">火</div>
+        <div class="cal-dow">水</div><div class="cal-dow">木</div><div class="cal-dow">金</div>
+        <div class="cal-dow sat">土</div>
+      </div>
+      <div class="cal-body" id="calBody"></div>
+      <br>
+      <button class="btn-back" onclick="goStep(1)">← メニューを選び直す</button>
+      <button class="btn-primary" id="btn2" onclick="goStep(3)" disabled>次へ　→　お客様情報</button>
+    </div>
+
+    <!-- STEP 3: お客様情報 -->
+    <div class="screen" id="screen3">
+      <div class="section-title">お客様情報</div>
+      <div class="section-sub">ご予約に必要な情報をご入力ください</div>
+      <div class="form-group"><label class="form-label">お名前<span class="req">*</span></label><input class="form-input" type="text" placeholder="山田 花子" id="f_name" oninput="checkForm()"></div>
+      <div class="form-group"><label class="form-label">ふりがな<span class="req">*</span></label><input class="form-input" type="text" placeholder="やまだ はなこ" id="f_kana" oninput="checkForm()"></div>
+      <div class="form-group"><label class="form-label">携帯番号<span class="req">*</span></label><input class="form-input" type="tel" placeholder="090-0000-0000" id="f_tel" oninput="checkForm()"></div>
+      <div class="form-group"><label class="form-label">ご来店経験<span class="req">*</span></label><select class="form-input" id="f_first" onchange="checkForm()"><option value="">選択してください</option><option value="初回">はい、初めてです</option><option value="リピート">リピートです</option></select></div>
+      <div class="form-group"><label class="form-label">気になる商品・お持ち帰りご希望のアイテム</label><input class="form-input" type="text" id="f_item" placeholder="例：美容液、化粧水など（任意）"></div>
+      <div class="form-group"><label class="form-label">ご要望・ご質問など</label><textarea class="form-input" id="f_note" placeholder="アレルギー・気になる点などあればご記入ください"></textarea></div>
+      <button class="btn-back" onclick="goStep(2)">← 日時を選び直す</button>
+      <button class="btn-primary" id="btn3" onclick="goStep(4)" disabled>次へ　→　予約内容の確認</button>
+    </div>
+
+    <!-- STEP 4: 確認 -->
+    <div class="screen" id="screen4">
+      <div class="section-title">予約内容の確認</div>
+      <div class="section-sub">内容をご確認のうえ、予約を確定してください</div>
+      <div class="confirm-card">
+        <div class="confirm-row"><span class="confirm-label">メニュー</span><span class="confirm-value" id="c_menu"></span></div>
+        <div class="confirm-row"><span class="confirm-label">日時</span><span class="confirm-value" id="c_date"></span></div>
+        <div class="confirm-row"><span class="confirm-label">所要時間</span><span class="confirm-value" id="c_dur"></span></div>
+        <div class="confirm-row"><span class="confirm-label">料金</span><span class="confirm-value" id="c_price"></span></div>
+        <div class="confirm-row"><span class="confirm-label">お名前</span><span class="confirm-value" id="c_name"></span></div>
+        <div class="confirm-row"><span class="confirm-label">携帯番号</span><span class="confirm-value" id="c_tel2"></span></div>
+        <div class="confirm-row" id="c_item_row" style="display:none"><span class="confirm-label">ご希望商品</span><span class="confirm-value" id="c_item2"></span></div>
+        <div class="confirm-row" id="c_note_row" style="display:none"><span class="confirm-label">ご要望</span><span class="confirm-value" id="c_note2"></span></div>
+      </div>
+      <p class="note" style="margin-bottom:14px">予約確定後、LINEにてご確認のメッセージをお送りします。<br>キャンセルは予約日3日前までLINEのリンクからお手続きください。<br>それ以降はお電話にてご連絡ください（0537-26-9228）</p>
+      <button class="btn-back" onclick="goStep(3)">← 情報を修正する</button>
+      <button class="btn-primary" id="btn4" onclick="submitBooking()">予約を確定する</button>
+    </div>
+
+    <!-- キャンセル画面 -->
+    <div class="screen" id="screenCancel">
+      <div class="complete-wrap">
+        <div class="complete-icon">📋</div>
+        <div class="complete-title" style="font-size:18px;">予約のキャンセル</div>
+        <div class="confirm-card" id="cancelDetail" style="text-align:left;margin-top:16px;"></div>
+        <button class="btn-primary" id="cancelBtn" onclick="executeCancel()" style="margin-top:16px;">この予約をキャンセルする</button>
+        <button class="btn-back" onclick="location.href=location.pathname" style="margin-top:8px;">← 予約ページに戻る</button>
+      </div>
+    </div>
+
+    <!-- 完了画面 -->
+    <div class="screen" id="screenDone">
+      <div class="complete-wrap">
+        <div class="complete-icon">🌿</div>
+        <div class="complete-title">ご予約ありがとうございます</div>
+        <p class="complete-text">予約が確定しました。<br>LINEにて確認メッセージをお送りしています。<br><br>当日はお気をつけてお越しください。<br>スタッフ一同、心よりお待ちしております。</p>
+        <br>
+        <div id="cancelLinkWrap" style="margin-bottom:12px;"></div>
+        <p class="note">rire リール　静岡県菊川市加茂5209 パピーラ202<br>TEL: 0537-26-9228　駐車場5台</p>
+        <p class="note" style="margin-top:8px">※ キャンセルは予約日3日前までLINEのリンクから可能です。<br>それ以降はお電話にてご連絡ください。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 管理者ログイン -->
+<div id="adminLogin" style="display:none">
+  <div class="header"><div class="header-logo">rire <span>管理者ログイン</span></div></div>
+  <div class="login-wrap">
+    <div class="login-title">管理者ログイン</div>
+    <div class="login-sub">パスワードを入力してください</div>
+    <input class="form-input" type="password" id="adminPw" placeholder="パスワード" onkeydown="if(event.key==='Enter')adminLogin()">
+    <br><br>
+    <button class="btn-primary" onclick="adminLogin()">ログイン</button>
+    <div class="login-error" id="loginError"></div>
+    <br>
+    <button class="btn-back" onclick="showCustomer()" style="margin-top:8px">← 予約ページに戻る</button>
+  </div>
+</div>
+
+<!-- 管理者ページ -->
+<div id="adminView" style="display:none">
+  <div class="header">
+    <div class="header-logo">rire <span>管理者ページ</span></div>
+    <span class="admin-link" onclick="showCustomer()">← 予約ページ</span>
+  </div>
+  <div class="admin-wrap">
+    <div class="tab-nav">
+      <button class="tab-btn active" id="tab1" onclick="switchTab('slots')">空き枠管理</button>
+      <button class="tab-btn" id="tab2" onclick="switchTab('bookings')">予約一覧<span class="badge" id="bookingCount">0</span></button>
+      <button class="tab-btn" id="tab3" onclick="switchTab('coupons')">クーポン</button>
+      <button class="tab-btn" id="tab4" onclick="switchTab('settings')">設定</button>
+    </div>
+
+    <!-- 空き枠管理 -->
+    <div id="tabSlots">
+      <div class="admin-section">
+        <div class="admin-section-title">📅 日付を選んで空き枠を設定する</div>
+        <input type="date" class="admin-date-picker" id="adminDatePicker" onchange="loadSlots()">
+        <div id="slotManager"><p class="empty-msg">日付を選択してください</p></div>
+      </div>
+    </div>
+
+    <!-- 予約一覧 -->
+    <div id="tabBookings" style="display:none">
+      <div class="admin-section">
+        <div class="admin-section-title">📋 予約一覧（新しい順）</div>
+        <div id="bookingList"><p class="loading-spinner">読み込み中…</p></div>
+      </div>
+    </div>
+
+    <!-- クーポン -->
+    <div id="tabCoupons" style="display:none">
+      <div class="admin-section">
+        <div class="admin-section-title">🏷 クーポンを追加する</div>
+        <div class="form-group"><label class="form-label">対象メニュー</label><select class="form-input" id="cpMenu"></select></div>
+        <div class="form-group"><label class="form-label">クーポン名</label><input class="form-input" type="text" id="cpLabel" placeholder="例：春の体験キャンペーン"></div>
+        <div class="form-group"><label class="form-label">クーポン価格（円）</label><input class="form-input" type="number" id="cpPrice" placeholder="例：5390"></div>
+        <div class="form-group"><label class="form-label">有効期間（開始日）</label><input class="form-input" type="date" id="cpFrom"></div>
+        <div class="form-group"><label class="form-label">有効期間（終了日）</label><input class="form-input" type="date" id="cpTo"></div>
+        <button class="btn-sm btn-sm-primary" onclick="addCoupon()" style="width:100%;padding:12px;">クーポンを追加する</button>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">🏷 現在のクーポン一覧</div>
+        <div id="couponList"><p class="empty-msg">クーポンはまだありません</p></div>
+      </div>
+    </div>
+
+    <!-- 設定 -->
+    <div id="tabSettings" style="display:none">
+      <div class="admin-section">
+        <div class="admin-section-title">⚙️ 設定</div>
+        <div class="settings-row">
+          <span class="settings-label">管理者パスワード変更</span>
+          <input class="settings-input" type="password" id="newPw" placeholder="新しいパスワード">
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">通知メールアドレス</span>
+          <input class="settings-input" type="email" id="notifEmail" placeholder="salon@example.com">
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">LINE チャネルアクセストークン</span>
+          <input class="settings-input" type="text" id="lineToken" placeholder="GASのスクリプトプロパティで設定">
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">LINE ユーザーID / グループID</span>
+          <input class="settings-input" type="text" id="lineUserId" placeholder="GASのスクリプトプロパティで設定">
+        </div>
+        <br>
+        <p class="note" style="text-align:left;margin-bottom:12px">※ LINEトークン・ユーザーIDはセキュリティのため<br>GASのスクリプトプロパティへ直接設定することを推奨します。</p>
+        <button class="btn-sm btn-sm-primary" onclick="saveSettings()">設定を保存</button>
+        <button class="btn-sm btn-sm-outline" onclick="testNotification()" style="margin-left:8px;">通知テスト送信</button>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">🗂️ データ管理</div>
+        <button class="btn-sm btn-sm-danger" onclick="exportBookings()">予約データをCSV出力</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 設定
+// ============================================================
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyvojb9_yDEGQ7N33RCwnCS3bC2nfQUNF8Awfs8HTC8-i_TY3jXPIgcZB9Gz7yem2Gy/exec';
+
+// ============================================================
+// メニューデータ
+// ============================================================
+const MENUS = [
+  {id:'f5',cat:'facial',catLabel:'フェイシャル【体験】',name:'【体験】セルマンフェイシャル',duration:'120分',price:11000,desc:'韓国発の「韓国肌管理」エステ。独自のASLカプセル技術で美容成分を肌の奥まで届け、不要な角質を優しく整えます。痛みやダウンタイムなし。1回でくすみが取れ、透明感のある艶玉肌を実感できます。'},
+  {id:'f6',cat:'facial',catLabel:'フェイシャル【体験】',name:'【体験】ALEフェイシャル',duration:'90分',price:7700,desc:'高純度エラスチン配合のオールハンドフェイシャル。たるみ・むくみ・くすみにアプローチし、ハリと透明感あふれる肌へ導きます。'},
+  {id:'f1',cat:'facial',catLabel:'フェイシャル',name:'セルマンフェイシャル',duration:'120分',price:22000,desc:'韓国発の「韓国肌管理」エステ。独自のASLカプセル技術で美容成分を肌の奥まで届けます。くすみ・毛穴・ハリ不足・乾燥が気になる方におすすめです。'},
+  {id:'f2',cat:'facial',catLabel:'フェイシャル',name:'ALEフェイシャル',duration:'90分',price:14300,desc:'高純度エラスチン配合のオールハンドフェイシャル。老廃物を流しながら血行・リンパを改善。たるみ・むくみ・ハリ不足が気になる方におすすめです。'},
+  {id:'f3',cat:'facial',catLabel:'フェイシャル',name:'顔キャビテーション',duration:'90分',price:7700,desc:'超音波でフェイスラインを引き締め。むくみ解消・二重顎改善・肌のハリ向上が期待できます。痛みなし・当日メイクOK。'},
+  {id:'f4',cat:'facial',catLabel:'フェイシャル',name:'光フェイシャル',duration:'60分',price:11000,desc:'IPL光でシミ・くすみ・赤ら顔・毛穴を同時ケア。コラーゲン生成を促進し、ハリやキメを整えます。施術直後からメイクOK。'},
+  {id:'fc',cat:'facial',catLabel:'フェイシャル【コース】',name:'フェイシャル　コースの方はこちら',duration:'—',price:0,desc:''},
+  {id:'h9',cat:'hair',catLabel:'脱毛【体験】',name:'【体験】両わき脱毛',duration:'30分',price:660,desc:'ジェル・保冷剤不要の国産IPL「NEQST」で施術。痛みが少なく短時間で完了。'},
+  {id:'h8',cat:'hair',catLabel:'脱毛【体験】',name:'【体験】VIOセット脱毛',duration:'60分',price:5940,desc:'国産IPL「NEQST」で施術。デリケートゾーンも安心。産毛や細い毛にも対応。'},
+  {id:'h1',cat:'hair',catLabel:'脱毛',name:'両わき脱毛',duration:'30分',price:1100,desc:'ジェル・保冷剤不要の国産IPL「NEQST」で施術。'},
+  {id:'h2',cat:'hair',catLabel:'脱毛',name:'顔脱毛',duration:'60分',price:7700,desc:'国産IPL「NEQST」で施術。産毛にも対応し顔全体をケア。光フェイシャル効果もあります。'},
+  {id:'h3',cat:'hair',catLabel:'脱毛',name:'VIOセット脱毛',duration:'60分',price:9900,desc:'国産IPL「NEQST」でV・I・Oをまとめてケア。プライバシーに配慮した環境です。'},
+  {id:'h4',cat:'hair',catLabel:'脱毛',name:'全身脱毛（VIO込み・顔なし）',duration:'120分',price:18700,desc:'国産IPL×SHR複合機「Beautrio」で施術。敏感肌対応・美肌効果高め。肌質で使い分けます。'},
+  {id:'h5',cat:'hair',catLabel:'脱毛',name:'Sパーツ脱毛',duration:'60分',price:2200,desc:'国産IPL×SHR複合機「Beautrio」で施術。敏感肌対応。',parts:'ひじ下 / ひざ / 手(足)の甲・指 / おでこ / 頬 / 鼻下 / あご / 乳輪まわり / へそまわり'},
+  {id:'h6',cat:'hair',catLabel:'脱毛',name:'Mパーツ脱毛',duration:'60分',price:4400,desc:'国産IPL×SHR複合機「Beautrio」で施術。敏感肌対応。',parts:'うなじ / ひじ上 / バストまわり / おなか全体 / Vライン / Iライン / Oライン'},
+  {id:'h7',cat:'hair',catLabel:'脱毛',name:'Lパーツ脱毛',duration:'60分',price:6600,desc:'国産IPL×SHR複合機「Beautrio」で施術。敏感肌対応。',parts:'ひざ上 / ひざ下 / 背中上部 / 背中下部 / ヒップ全体'},
+  {id:'hc',cat:'hair',catLabel:'脱毛【コース】',name:'脱毛　コースの方はこちら',duration:'—',price:0,desc:''},
+  {id:'s5',cat:'slim',catLabel:'痩身【体験】',name:'【体験】痩身 上半身',duration:'90分',price:7700,desc:'キャビリポプロで施術。脂肪・セルライトを分解し老廃物をリンパへ流します。'},
+  {id:'s1',cat:'slim',catLabel:'痩身',name:'痩身 上半身',duration:'90分',price:7700,desc:'キャビリポプロ（超音波・ラジオ波・吸引EMS）で施術。1回でウエストのすっきり感を実感。'},
+  {id:'s2',cat:'slim',catLabel:'痩身',name:'痩身 下半身',duration:'120分',price:9900,desc:'キャビリポプロで施術。脚のむくみ・セルライトが気になる方におすすめです。'},
+  {id:'s3',cat:'slim',catLabel:'痩身',name:'痩身 全身',duration:'150分',price:19800,desc:'キャビリポプロで全身トータルケア。むくみ・冷え・脂肪が気になる方に。'},
+  {id:'s4',cat:'slim',catLabel:'痩身',name:'痩身 パーツ1箇所',duration:'60分',price:5500,desc:'気になる部位を集中ケア。超音波・ラジオ波・吸引EMSで脂肪を分解します。'},
+  {id:'sc',cat:'slim',catLabel:'痩身【コース】',name:'痩身　コースの方はこちら',duration:'—',price:0,desc:''},
+  {id:'y2',cat:'yomogi',catLabel:'よもぎ蒸し【体験】',name:'【体験】よもぎ蒸し',duration:'30分',price:2200,desc:'よもぎなどの漢方ハーブを蒸した蒸気で体を内側から温める温活ケア。冷え性・むくみ・デトックスに。'},
+  {id:'y1',cat:'yomogi',catLabel:'よもぎ蒸し',name:'よもぎ蒸し',duration:'30分',price:4400,desc:'よもぎなどの漢方ハーブを蒸した蒸気で体を内側から温める温活ケア。冷え性・むくみ・婦人科系の悩みに。'},
+  {id:'yc',cat:'yomogi',catLabel:'よもぎ蒸し【コース】',name:'よもぎ蒸し　コースの方はこちら',duration:'—',price:0,desc:''},
+  {id:'t2',cat:'tone',catLabel:'トーンヌール【体験】',name:'【体験】トーンヌール',duration:'60分',price:3300,desc:'生薬と火山泥の和漢エステ。温めた生薬を毛穴から浸透させ血のめぐりを整えます。'},
+  {id:'t1',cat:'tone',catLabel:'トーンヌール',name:'トーンヌール',duration:'60分',price:6600,desc:'生薬と火山泥の和漢エステ「トーンヌール」。むくみ・冷え性・倦怠感・婦人科系の悩みに。'},
+  {id:'tc',cat:'tone',catLabel:'トーンヌール【コース】',name:'トーンヌール　コースの方はこちら',duration:'—',price:0,desc:''},
+];
+
+// ============================================================
+// 状態管理
+// ============================================================
+let COUPONS = JSON.parse(localStorage.getItem('rire_coupons') || '[]');
+let sel = {menuId:'',menuName:'',catLabel:'',duration:'',price:0,coupon:null,date:'',time:''};
+const today = new Date();
+let calYear = today.getFullYear(), calMonth = today.getMonth();
+const DOWS = ['日','月','火','水','木','金','土'];
+let SLOTS_CACHE = {};
+let ADMIN_TOKEN = sessionStorage.getItem('rire_admin_token') || '';
+
+// ============================================================
+// ユーティリティ
+// ============================================================
+function fmtDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function fmtPrice(p){return '¥'+p.toLocaleString()+' 税込';}
+function parseDateStr(s){return new Date(s+'T00:00:00');}
+function getActiveCoupon(id){const now=new Date();return COUPONS.find(c=>c.menuId===id&&new Date(c.from)<=now&&new Date(c.to)>=now)||null;}
+function getSlots(d){return SLOTS_CACHE[d]||[];}
+function escapeHtml(v){
+  return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function notificationOk(notification){
+  return !!(notification&&(notification.ok||notification.email?.ok||notification.line?.ok));
+}
+function notificationSummary(notification){
+  if(!notification)return '通知結果が返ってきませんでした。';
+  const parts=[];
+  if(notification.email?.ok)parts.push('メール送信OK');
+  else if(notification.email?.skipped)parts.push('メール未設定');
+  else if(notification.email?.error)parts.push('メール失敗: '+notification.email.error);
+  if(notification.line?.ok)parts.push('LINE送信OK');
+  else if(notification.line?.skipped)parts.push('LINE未設定');
+  else if(notification.line?.status)parts.push('LINE失敗: HTTP '+notification.line.status);
+  else if(notification.line?.error)parts.push('LINE失敗: '+notification.line.error);
+  return parts.join(' / ')||'通知未設定';
+}
+
+async function gasGet(params){
+  const url=GAS_URL+'?'+new URLSearchParams(params);
+  const res=await fetch(url);
+  if(!res.ok)throw new Error('通信に失敗しました');
+  const data=await res.json();
+  if(data&&data.ok===false)throw new Error(data.error||'処理に失敗しました');
+  return data;
+}
+async function checkGasVersion(){
+  const data=await gasGet({action:'version'});
+  if(data.version!=='2026-06-04-notification-v2')throw new Error('GASのコードが古い可能性があります');
+  return data;
+}
+async function gasPost(body){
+  const res=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
+  if(!res.ok)throw new Error('通信に失敗しました');
+  const data=await res.json();
+  if(data&&data.ok===false)throw new Error(data.error||'処理に失敗しました');
+  return data;
+}
+
+// ============================================================
+// スロット管理
+// ============================================================
+async function loadSlotsFromSheet(){
+  try{
+    const data=await gasGet({action:'getSlots'});
+    const todayStr=fmtDate(today);
+    Object.keys(data).forEach(d=>{if(d>=todayStr)SLOTS_CACHE[d]=data[d];});
+    localStorage.setItem('rire_slots',JSON.stringify(SLOTS_CACHE));
+  }catch(e){
+    SLOTS_CACHE=JSON.parse(localStorage.getItem('rire_slots')||'{}');
+  }
+}
+async function saveSlotsToSheet(){
+  try{
+    await gasPost({action:'saveSlots',slots:SLOTS_CACHE,adminToken:ADMIN_TOKEN});
+    localStorage.setItem('rire_slots',JSON.stringify(SLOTS_CACHE));
+  }catch(e){localStorage.setItem('rire_slots',JSON.stringify(SLOTS_CACHE));}
+}
+
+// ============================================================
+// メニュー
+// ============================================================
+function renderMenus(cat){
+  const list=document.getElementById('menuList');list.innerHTML='';
+  MENUS.filter(m=>cat==='all'||m.cat===cat).forEach(m=>{
+    const coupon=getActiveCoupon(m.id);
+    const div=document.createElement('div');
+    div.className='menu-card'+(sel.menuId===m.id?' selected':'');
+    div.dataset.id=m.id;
+    div.onclick=e=>{if(e.target.classList.contains('detail-toggle'))return;selectMenu(m.id);};
+    let btns='';
+    if(m.desc)btns+=`<span class="detail-toggle" onclick="toggleDetail('${m.id}')">詳細はこちら</span> `;
+    if(m.parts)btns+=`<span class="detail-toggle" id="pt-${m.id}" onclick="toggleParts('${m.id}')">対象部位はこちら</span>`;
+    div.innerHTML=`
+      <div class="menu-card-main">
+        <div>
+          <div class="menu-name">${m.name}</div>
+          <div class="menu-cat-label">${m.catLabel}</div>
+          <div style="margin-top:3px;">${btns}</div>
+          ${coupon?`<div class="coupon-badge">🏷 ${escapeHtml(coupon.label)} ${fmtPrice(coupon.price)}</div>`:''}
+        </div>
+        <div class="menu-card-right">
+          <div class="menu-time">${m.duration!=='—'?m.duration:''}</div>
+          <div class="menu-price">${m.price===0?'コース価格':fmtPrice(m.price)}</div>
+        </div>
+      </div>
+      ${m.desc?`<div class="menu-detail" id="detail_${m.id}">${m.desc}</div>`:''}
+      ${m.parts?`<div class="menu-detail" id="parts_${m.id}">${m.parts}</div>`:''}`;
+    list.appendChild(div);
+  });
+}
+function filterCat(el,cat){document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderMenus(cat);}
+function selectMenu(id){
+  document.querySelectorAll('.menu-card').forEach(c=>c.classList.remove('selected'));
+  document.querySelector(`.menu-card[data-id="${id}"]`)?.classList.add('selected');
+  const m=MENUS.find(x=>x.id===id);
+  Object.assign(sel,{menuId:id,menuName:m.name,catLabel:m.catLabel,duration:m.duration,price:m.price,coupon:getActiveCoupon(id)});
+  document.getElementById('btn1').disabled=false;
+}
+function toggleDetail(id){document.getElementById('detail_'+id)?.classList.toggle('open');event.currentTarget?.classList.toggle('open');event.stopPropagation();}
+function toggleParts(id){document.getElementById('parts_'+id)?.classList.toggle('open');document.getElementById('pt-'+id)?.classList.toggle('open');event.stopPropagation();}
+
+// ============================================================
+// カレンダー
+// ============================================================
+function renderCal(){
+  const months=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  document.getElementById('calMonthLabel').textContent=`${calYear}年 ${months[calMonth]}`;
+  const body=document.getElementById('calBody');body.innerHTML='';
+  const firstDow=new Date(calYear,calMonth,1).getDay();
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const todayStr=fmtDate(today);
+  const now=new Date();
+  const isPast22=now.getHours()>=22;
+  const tomorrow=new Date(today);tomorrow.setDate(today.getDate()+1);
+  const tomorrowStr=fmtDate(tomorrow);
+  const bookings=JSON.parse(localStorage.getItem('rire_bookings')||'[]');
+  for(let i=0;i<firstDow;i++){const el=document.createElement('div');el.className='cal-cell empty';body.appendChild(el);}
+  for(let d=1;d<=daysInMonth;d++){
+    const date=new Date(calYear,calMonth,d);
+    const dateStr=fmtDate(date);
+    const dow=date.getDay();
+    const isUnavail=dateStr<=todayStr||(isPast22&&dateStr===tomorrowStr);
+    const slots=getSlots(dateStr);
+    const bookedTimes=bookings.filter(b=>b.date===dateStr).map(b=>b.time);
+    const isSelDate=sel.date===dateStr;
+    const cell=document.createElement('div');
+    let cls='cal-cell';
+    if(dow===0)cls+=' sun';if(dow===6)cls+=' sat';
+    if(dateStr===todayStr)cls+=' today';
+    if(isUnavail)cls+=' past';
+    if(!isUnavail&&slots.length===0)cls+=' closed';
+    if(isSelDate)cls+=' has-selected';
+    cell.className=cls;
+    const daySpan=document.createElement('span');daySpan.className='cal-day-num';daySpan.textContent=d;cell.appendChild(daySpan);
+    if(!isUnavail){
+      if(slots.length===0){const b=document.createElement('span');b.className='close-badge';b.textContent='close';cell.appendChild(b);}
+      else{
+        const wrap=document.createElement('div');wrap.className='cell-times';
+        slots.forEach(t=>{
+          if(bookedTimes.includes(t))return; // 予約済みは非表示
+          const chip=document.createElement('div');
+          chip.className='cell-time'+(isSelDate&&sel.time===t?' selected':'');
+          chip.textContent=t;
+          chip.onclick=()=>selectDateTime(dateStr,t);
+          wrap.appendChild(chip);
+        });
+        if(wrap.children.length===0){const b=document.createElement('span');b.className='close-badge';b.textContent='満';cell.appendChild(b);}
+        else cell.appendChild(wrap);
+      }
+    }
+    body.appendChild(cell);
+  }
+}
+function changeMonth(d){calMonth+=d;if(calMonth<0){calMonth=11;calYear--;}if(calMonth>11){calMonth=0;calYear++;}renderCal();}
+function selectDateTime(dateStr,time){
+  sel.date=dateStr;sel.time=time;
+  document.getElementById('btn2').disabled=false;
+  const[y,m,d]=dateStr.split('-');
+  const dow=parseDateStr(dateStr).getDay();
+  document.getElementById('selBarText').textContent=`${parseInt(m)}月${parseInt(d)}日（${DOWS[dow]}）${time}〜`;
+  document.getElementById('selBar').classList.add('show');
+  renderCal();
+}
+function clearDateTime(){sel.date='';sel.time='';document.getElementById('btn2').disabled=true;document.getElementById('selBar').classList.remove('show');renderCal();}
+
+// ============================================================
+// フォーム
+// ============================================================
+function checkForm(){
+  const n=document.getElementById('f_name').value,k=document.getElementById('f_kana').value,t=document.getElementById('f_tel').value,f=document.getElementById('f_first').value;
+  document.getElementById('btn3').disabled=!(n&&k&&t&&f);
+}
+
+// ============================================================
+// ステップ遷移
+// ============================================================
+function goStep(n){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen'+n).classList.add('active');
+  [1,2,3,4].forEach(i=>{const el=document.getElementById('s'+i);el.classList.remove('active','done');if(i===n)el.classList.add('active');else if(i<n)el.classList.add('done');});
+  if(n===2)renderCal();
+  if(n===4)fillConfirm();
+  window.scrollTo(0,0);
+}
+
+function fillConfirm(){
+  const[y,m,d]=sel.date.split('-');
+  const dow=parseDateStr(sel.date).getDay();
+  const dateLabel=`${y}年${parseInt(m)}月${parseInt(d)}日（${DOWS[dow]}）`;
+  const couponLine=sel.coupon?`<br><span style="font-size:11px;color:var(--rose)">🏷 ${escapeHtml(sel.coupon.label)} ${fmtPrice(sel.coupon.price)}</span>`:'';
+  document.getElementById('c_menu').textContent=sel.menuName;
+  document.getElementById('c_date').textContent=`${dateLabel} ${sel.time}〜`;
+  document.getElementById('c_dur').textContent=sel.duration;
+  document.getElementById('c_price').innerHTML=fmtPrice(sel.price)+couponLine;
+  document.getElementById('c_name').textContent=document.getElementById('f_name').value;
+  document.getElementById('c_tel2').textContent=document.getElementById('f_tel').value;
+  const item=document.getElementById('f_item').value;
+  document.getElementById('c_item_row').style.display=item?'flex':'none';
+  if(item)document.getElementById('c_item2').textContent=item;
+  const note=document.getElementById('f_note').value;
+  document.getElementById('c_note_row').style.display=note?'flex':'none';
+  if(note)document.getElementById('c_note2').textContent=note;
+}
+
+// ============================================================
+// 予約送信
+// ============================================================
+async function submitBooking(){
+  const btn=document.getElementById('btn4');
+  btn.disabled=true;btn.textContent='処理中...';
+  const booking={
+    date:sel.date,time:sel.time,menuId:sel.menuId,menuName:sel.menuName,
+    catLabel:sel.catLabel,duration:sel.duration,price:sel.price,coupon:sel.coupon,
+    name:document.getElementById('f_name').value,kana:document.getElementById('f_kana').value,
+    tel:document.getElementById('f_tel').value,first:document.getElementById('f_first').value,
+    item:document.getElementById('f_item').value,note:document.getElementById('f_note').value,
+    createdAt:new Date().toISOString()
+  };
+  try{
+    const result=await gasPost({action:'createBooking',booking});
+    const saved=result.booking||booking;
+    SLOTS_CACHE=result.slots||SLOTS_CACHE;
+    localStorage.setItem('rire_slots',JSON.stringify(SLOTS_CACHE));
+    try{
+      const b=JSON.parse(localStorage.getItem('rire_bookings')||'[]');
+      b.push(saved);
+      localStorage.setItem('rire_bookings',JSON.stringify(b));
+    }catch(e){}
+
+    const cancelPayload={id:saved.id,date:saved.date,time:saved.time,token:result.cancelToken||saved.cancelToken};
+    const cancelToken=btoa(JSON.stringify(cancelPayload));
+    const cancelUrl=`${location.href.split('?')[0]}?cancel=${encodeURIComponent(cancelToken)}`;
+    document.getElementById('cancelLinkWrap').innerHTML=`<a href="${escapeHtml(cancelUrl)}" style="font-size:12px;color:var(--rose);text-decoration:underline;">🔗 キャンセルはこちら（3日前まで）</a>`;
+
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screenDone').classList.add('active');
+    document.getElementById('stepsBar').style.display='none';
+    window.scrollTo(0,0);
+    if(!notificationOk(result.notification)){
+      alert('予約は確定しましたが、サロン通知が送信できていない可能性があります。\n管理画面の設定タブで通知設定を確認してください。\n\n'+notificationSummary(result.notification));
+    }
+  }catch(e){
+    alert(e.message==='selected slot is no longer available'?'選択された日時はすでに埋まりました。別の日時を選んでください。':`予約を確定できませんでした。\n${e.message}`);
+    btn.disabled=false;
+    btn.textContent='予約を確定する';
+    await loadSlotsFromSheet();
+    renderCal();
+  }
+}
+
+// ============================================================
+// キャンセル
+// ============================================================
+async function checkCancelParam(){
+  const params=new URLSearchParams(location.search);
+  const token=params.get('cancel');
+  if(!token)return;
+  try{
+    const info=JSON.parse(atob(decodeURIComponent(token)));
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screenCancel').classList.add('active');
+    document.getElementById('stepsBar').style.display='none';
+
+    const bookingDate=new Date(info.date+'T00:00:00');
+    const deadline=new Date(bookingDate);deadline.setDate(deadline.getDate()-3);
+    if(new Date()>deadline){
+      document.getElementById('cancelDetail').innerHTML=`<p style="text-align:center;color:var(--muted);font-size:13px;">キャンセル期限（予約日3日前）を過ぎています。<br>お電話にてご連絡ください。<br><br>☎ 0537-26-9228</p>`;
+      document.getElementById('cancelBtn').style.display='none';return;
+    }
+
+    // GASから予約を取得（クロスデバイス対応）
+    let booking=null;
+    try{
+      booking=await gasGet({action:'checkBooking',id:info.id,token:info.token});
+    }catch(e){}
+    // フォールバック: localStorage
+    if(!booking||booking.error||booking.status==='cancelled'){
+      const localBookings=JSON.parse(localStorage.getItem('rire_bookings')||'[]');
+      booking=localBookings.find(b=>String(b.id)===String(info.id));
+    }
+
+    if(!booking||booking.status==='cancelled'){
+      document.getElementById('cancelDetail').innerHTML=`<p style="text-align:center;color:var(--muted);">予約情報が見つかりませんでした。<br>すでにキャンセル済みの可能性があります。</p>`;
+      document.getElementById('cancelBtn').style.display='none';return;
+    }
+
+    const[y,m,d]=booking.date.split('-');const dow=parseDateStr(booking.date).getDay();
+    document.getElementById('cancelDetail').innerHTML=`
+      <div class="confirm-row"><span class="confirm-label">メニュー</span><span class="confirm-value">${escapeHtml(booking.menuName)}</span></div>
+      <div class="confirm-row"><span class="confirm-label">日時</span><span class="confirm-value">${escapeHtml(y)}年${parseInt(m)}月${parseInt(d)}日（${DOWS[dow]}）${escapeHtml(booking.time)}〜</span></div>
+      <div class="confirm-row"><span class="confirm-label">お名前</span><span class="confirm-value">${escapeHtml(booking.name)}</span></div>`;
+    document.getElementById('cancelBtn').dataset.bookingJson=JSON.stringify(booking);
+    document.getElementById('cancelBtn').dataset.cancelInfo=JSON.stringify(info);
+  }catch(e){console.error(e);}
+}
+
+async function executeCancel(){
+  const btn=document.getElementById('cancelBtn');
+  const info=JSON.parse(btn.dataset.cancelInfo);
+  btn.disabled=true;btn.textContent='処理中...';
+
+  try{
+    const result=await gasPost({action:'cancelBooking',id:info.id,cancelToken:info.token});
+    SLOTS_CACHE=result.slots||SLOTS_CACHE;
+    localStorage.setItem('rire_slots',JSON.stringify(SLOTS_CACHE));
+    const bookings=JSON.parse(localStorage.getItem('rire_bookings')||'[]');
+    localStorage.setItem('rire_bookings',JSON.stringify(bookings.filter(b=>String(b.id)!==String(info.id))));
+    document.getElementById('cancelDetail').innerHTML=`<p style="text-align:center;color:#7ab87a;font-size:14px;padding:20px;">✅ キャンセルが完了しました。<br>またのご利用をお待ちしております。</p>`;
+    btn.style.display='none';
+  }catch(e){
+    alert(`キャンセルできませんでした。\n${e.message}`);
+    btn.disabled=false;
+    btn.textContent='この予約をキャンセルする';
+  }
+}
+
+// ============================================================
+// 管理者
+// ============================================================
+function showAdminLogin(){document.getElementById('customerView').style.display='none';document.getElementById('adminLogin').style.display='block';document.getElementById('adminView').style.display='none';}
+function showCustomer(){document.getElementById('customerView').style.display='block';document.getElementById('adminLogin').style.display='none';document.getElementById('adminView').style.display='none';}
+async function adminLogin(){
+  const pw=document.getElementById('adminPw').value;
+  try{
+    await checkGasVersion();
+    const result=await gasGet({action:'adminLogin',password:pw});
+    if(!result.adminToken)throw new Error('GAS側の管理ログイン機能が未更新です');
+    ADMIN_TOKEN=result.adminToken;
+    sessionStorage.setItem('rire_admin_token',ADMIN_TOKEN);
+    document.getElementById('adminLogin').style.display='none';
+    document.getElementById('adminView').style.display='block';
+    document.getElementById('adminPw').value='';
+    document.getElementById('loginError').textContent='';
+    loadAdminData();
+  }catch(e){
+    document.getElementById('loginError').textContent=e.message.includes('GAS')?'GASを新しいCode.gsに貼り替えて再デプロイしてください':'パスワードが違います';
+  }
+}
+function loadAdminData(){
+  document.getElementById('adminDatePicker').value=fmtDate(today);
+  loadSlotsFromSheet().then(()=>loadSlots());
+  renderBookings();
+}
+
+function loadSlots(){
+  const dateStr=document.getElementById('adminDatePicker').value;if(!dateStr)return;
+  const slots=getSlots(dateStr);
+  const all=[];for(let h=9;h<20;h++){all.push(`${String(h).padStart(2,'0')}:00`);all.push(`${String(h).padStart(2,'0')}:30`);}
+  document.getElementById('slotManager').innerHTML=`
+    <div class="slot-grid">${all.map(t=>`<div class="slot-item ${slots.includes(t)?'on':'off'}" onclick="toggleSlot('${dateStr}','${t}',this)">${t}<span class="slot-item-status">${slots.includes(t)?'受付中':'休'}</span></div>`).join('')}</div>
+    <div class="slot-actions">
+      <button class="btn-sm btn-sm-outline" onclick="setAllSlots('${dateStr}',true)">全て受付中</button>
+      <button class="btn-sm btn-sm-outline" onclick="setAllSlots('${dateStr}',false)">全て休</button>
+    </div>`;
+}
+function toggleSlot(dateStr,time,el){
+  const slots=SLOTS_CACHE[dateStr]||[];const idx=slots.indexOf(time);
+  if(idx>=0){slots.splice(idx,1);el.classList.replace('on','off');el.querySelector('.slot-item-status').textContent='休';}
+  else{slots.push(time);slots.sort();el.classList.replace('off','on');el.querySelector('.slot-item-status').textContent='受付中';}
+  SLOTS_CACHE[dateStr]=slots;saveSlotsToSheet();
+}
+function setAllSlots(dateStr,on){
+  if(on){const a=[];for(let h=9;h<20;h++){a.push(`${String(h).padStart(2,'0')}:00`);a.push(`${String(h).padStart(2,'0')}:30`);}SLOTS_CACHE[dateStr]=a;}
+  else SLOTS_CACHE[dateStr]=[];
+  saveSlotsToSheet();loadSlots();
+}
+
+// 予約一覧（GASから取得 → localStorageフォールバック）
+async function renderBookings(){
+  const list=document.getElementById('bookingList');
+  list.innerHTML='<p class="loading-spinner">読み込み中…</p>';
+  let bookings=[];
+  try{
+    bookings=await gasGet({action:'getBookings',adminToken:ADMIN_TOKEN});
+    if(!Array.isArray(bookings))bookings=[];
+    // GASから取得成功したらlocalStorageも更新
+    if(bookings.length>0)localStorage.setItem('rire_bookings',JSON.stringify(bookings));
+  }catch(e){
+    bookings=JSON.parse(localStorage.getItem('rire_bookings')||'[]').slice().reverse();
+  }
+  document.getElementById('bookingCount').textContent=bookings.length;
+  if(!bookings.length){list.innerHTML='<p class="empty-msg">予約はまだありません</p>';return;}
+  list.innerHTML=bookings.map(b=>{
+    const[y,m,d]=String(b.date).split('-');const dow=parseDateStr(String(b.date)).getDay();
+    return`<div class="booking-item">
+      <div class="booking-meta">${escapeHtml(y)}年${parseInt(m)}月${parseInt(d)}日（${DOWS[dow]}）${escapeHtml(b.time)}〜 | ${escapeHtml(b.first)}</div>
+      <div class="booking-name">${escapeHtml(b.name)}（${escapeHtml(b.kana)}）</div>
+      <div class="booking-menu">${escapeHtml(b.catLabel)} / ${escapeHtml(b.menuName)}　${escapeHtml(b.duration)}</div>
+      <div class="booking-meta" style="margin-top:2px">📞 ${escapeHtml(b.tel)}${b.note?' 📝 '+escapeHtml(b.note):''}</div>
+      <div class="booking-actions"><button class="btn-sm btn-sm-danger" onclick="deleteBooking('${escapeHtml(b.id)}')">削除</button></div>
+    </div>`;
+  }).join('');
+}
+
+async function deleteBooking(id){
+  if(!confirm('この予約を削除しますか？'))return;
+  // localStorage
+  let b=JSON.parse(localStorage.getItem('rire_bookings')||'[]').filter(x=>String(x.id)!==String(id));
+  localStorage.setItem('rire_bookings',JSON.stringify(b));
+  // GAS
+  gasPost({action:'deleteBooking',id,adminToken:ADMIN_TOKEN}).catch(()=>{});
+  renderBookings();
+}
+
+function switchTab(tab){
+  ['slots','bookings','coupons','settings'].forEach((t,i)=>{
+    document.getElementById('tab'+(i+1)).classList.toggle('active',t===tab);
+  });
+  document.getElementById('tabSlots').style.display=tab==='slots'?'block':'none';
+  document.getElementById('tabBookings').style.display=tab==='bookings'?'block':'none';
+  document.getElementById('tabCoupons').style.display=tab==='coupons'?'block':'none';
+  document.getElementById('tabSettings').style.display=tab==='settings'?'block':'none';
+  if(tab==='bookings')renderBookings();
+  if(tab==='coupons')renderCouponTab();
+}
+
+// ============================================================
+// クーポン
+// ============================================================
+function renderCouponTab(){
+  document.getElementById('cpMenu').innerHTML=MENUS.map(m=>`<option value="${m.id}">${m.catLabel} / ${m.name}</option>`).join('');
+  renderCouponList();
+}
+function addCoupon(){
+  const menuId=document.getElementById('cpMenu').value,label=document.getElementById('cpLabel').value,price=parseInt(document.getElementById('cpPrice').value),from=document.getElementById('cpFrom').value,to=document.getElementById('cpTo').value;
+  if(!label||!price||!from||!to){alert('すべての項目を入力してください');return;}
+  const coupons=JSON.parse(localStorage.getItem('rire_coupons')||'[]');
+  coupons.push({id:Date.now(),menuId,label,price,from,to});
+  localStorage.setItem('rire_coupons',JSON.stringify(coupons));COUPONS=coupons;
+  document.getElementById('cpLabel').value='';document.getElementById('cpPrice').value='';document.getElementById('cpFrom').value='';document.getElementById('cpTo').value='';
+  renderCouponList();alert('クーポンを追加しました！');
+}
+function renderCouponList(){
+  const coupons=JSON.parse(localStorage.getItem('rire_coupons')||'[]');
+  const list=document.getElementById('couponList');
+  if(!coupons.length){list.innerHTML='<p class="empty-msg">クーポンはまだありません</p>';return;}
+  const now=new Date();
+  list.innerHTML=coupons.map(c=>{
+    const m=MENUS.find(x=>x.id===c.menuId);
+    const isActive=new Date(c.from)<=now&&new Date(c.to)>=now;
+    return`<div class="booking-item">
+      <div class="booking-meta">${c.from} 〜 ${c.to}　<span style="color:${isActive?'var(--rose)':'#ccc'}">${isActive?'● 有効':'● 期間外'}</span></div>
+      <div class="booking-name">${escapeHtml(m?m.name:c.menuId)}</div>
+      <div class="booking-menu">${escapeHtml(c.label)}　${fmtPrice(c.price)}</div>
+      <div class="booking-actions"><button class="btn-sm btn-sm-danger" onclick="deleteCoupon(${c.id})">削除</button></div>
+    </div>`;
+  }).join('');
+}
+function deleteCoupon(id){if(!confirm('削除しますか？'))return;let c=JSON.parse(localStorage.getItem('rire_coupons')||'[]').filter(x=>x.id!==id);localStorage.setItem('rire_coupons',JSON.stringify(c));COUPONS=c;renderCouponList();}
+
+// ============================================================
+// 設定
+// ============================================================
+function saveSettings(){
+  if(!ADMIN_TOKEN){
+    alert('管理ログインが完了していません。\nいったん予約ページに戻り、管理画面へログインし直してください。\nそれでも出る場合はGASを新しいCode.gsに貼り替えて再デプロイしてください。');
+    return;
+  }
+  const pw=document.getElementById('newPw').value;
+  const settings={};
+  const email=document.getElementById('notifEmail').value;
+  const lineToken=document.getElementById('lineToken').value;
+  const lineUserId=document.getElementById('lineUserId').value;
+  if(pw)settings.adminPassword=pw;
+  if(email)settings.email=email;
+  if(lineToken)settings.lineToken=lineToken;
+  if(lineUserId)settings.lineUserId=lineUserId;
+  if(Object.keys(settings).length>0){
+    gasPost({action:'saveSettings',settings,adminToken:ADMIN_TOKEN}).then(()=>{
+      document.getElementById('newPw').value='';
+      alert('設定を保存しました');
+    }).catch(e=>alert(`設定を保存できませんでした。\n${e.message}`));
+  }else{
+    alert('保存する項目がありません');
+  }
+}
+
+function testNotification(){
+  gasPost({action:'testNotification',adminToken:ADMIN_TOKEN}).then(result=>{
+    const summary=notificationSummary(result.notification);
+    if(notificationOk(result.notification))alert('通知テストを送信しました。\n'+summary);
+    else alert('通知テストを送信できませんでした。\n'+summary+'\n\nGASのスクリプトプロパティを確認してください。');
+  }).catch(e=>alert(`通知テストに失敗しました。\n${e.message}`));
+}
+
+// ============================================================
+// CSV出力
+// ============================================================
+function exportBookings(){
+  let bookings=JSON.parse(localStorage.getItem('rire_bookings')||'[]');
+  if(!bookings.length){alert('予約データがありません');return;}
+  const header=['日付','時間','メニュー','お名前','ふりがな','電話番号','来店経験','ご要望','予約日時'].join(',');
+  const rows=bookings.map(b=>[b.date,b.time,b.menuName,b.name,b.kana,b.tel,b.first,b.note||'',b.createdAt].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+[header,...rows].join('\n')],{type:'text/csv;charset=utf-8;'}));
+  a.download=`rire_bookings_${fmtDate(today)}.csv`;a.click();
+}
+
+// ============================================================
+// 初期化
+// ============================================================
+(async function(){
+  renderMenus('facial');
+  renderCal();
+  try{await loadSlotsFromSheet();renderCal();}catch(e){}
+  const params=new URLSearchParams(location.search);
+  if(params.get('cancel'))checkCancelParam();
+})();
+</script>
+</body>
+</html>
