@@ -287,7 +287,22 @@ textarea.form-input { resize: vertical; min-height: 72px; }
     <!-- 空き枠管理 -->
     <div id="tabSlots">
       <div class="admin-section">
-        <div class="admin-section-title">📅 日付を選んで空き枠を設定する</div>
+        <div class="admin-section-title">📆 曜日ごとの基本枠を設定する</div>
+        <p class="note" style="margin-top:-4px;margin-bottom:12px;">ここで一度設定すると、日付ごとに入力しなくても毎週同じ空き枠が表示されます。</p>
+        <select class="admin-date-picker" id="weeklyDayPicker" onchange="loadWeeklySlots()">
+          <option value="0">日曜日</option>
+          <option value="1">月曜日</option>
+          <option value="2">火曜日</option>
+          <option value="3">水曜日</option>
+          <option value="4">木曜日</option>
+          <option value="5">金曜日</option>
+          <option value="6">土曜日</option>
+        </select>
+        <div id="weeklySlotManager"><p class="empty-msg">曜日を選択してください</p></div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">📅 日付ごとの特別設定</div>
+        <p class="note" style="margin-top:-4px;margin-bottom:12px;">臨時休業や予約で埋まった日など、特別な日だけここで上書きします。</p>
         <input type="date" class="admin-date-picker" id="adminDatePicker" onchange="loadSlots()">
         <div id="slotManager"><p class="empty-msg">日付を選択してください</p></div>
       </div>
@@ -401,6 +416,7 @@ const today = new Date();
 let calYear = today.getFullYear(), calMonth = today.getMonth();
 const DOWS = ['日','月','火','水','木','金','土'];
 let SLOTS_CACHE = {};
+let WEEKLY_SLOTS = {};
 let ADMIN_TOKEN = sessionStorage.getItem('rire_admin_token') || '';
 
 // ============================================================
@@ -410,7 +426,12 @@ function fmtDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart
 function fmtPrice(p){return '¥'+p.toLocaleString()+' 税込';}
 function parseDateStr(s){return new Date(s+'T00:00:00');}
 function getActiveCoupon(id){const now=new Date();return COUPONS.find(c=>c.menuId===id&&new Date(c.from)<=now&&new Date(c.to)>=now)||null;}
-function getSlots(d){return SLOTS_CACHE[d]||[];}
+function allSlotTimes(){const all=[];for(let h=9;h<20;h++){all.push(`${String(h).padStart(2,'0')}:00`);all.push(`${String(h).padStart(2,'0')}:30`);}return all;}
+function getSlots(d){
+  if(Object.prototype.hasOwnProperty.call(SLOTS_CACHE,d))return SLOTS_CACHE[d]||[];
+  const dow=String(parseDateStr(d).getDay());
+  return WEEKLY_SLOTS[dow]||[];
+}
 function escapeHtml(v){
   return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -440,7 +461,7 @@ async function gasGet(params){
 }
 async function checkGasVersion(){
   const data=await gasGet({action:'version'});
-  if(data.version!=='2026-06-04-notification-v2')throw new Error('GASのコードが古い可能性があります');
+  if(data.version!=='2026-06-04-weekly-slots-v1')throw new Error('GASのコードが古い可能性があります');
   return data;
 }
 async function gasPost(body){
@@ -457,18 +478,27 @@ async function gasPost(body){
 async function loadSlotsFromSheet(){
   try{
     const data=await gasGet({action:'getSlots'});
+    const dates=data.dates||data;
+    WEEKLY_SLOTS=data.weekly||JSON.parse(localStorage.getItem('rire_weekly_slots')||'{}');
     const todayStr=fmtDate(today);
-    Object.keys(data).forEach(d=>{if(d>=todayStr)SLOTS_CACHE[d]=data[d];});
+    SLOTS_CACHE={};
+    Object.keys(dates).forEach(d=>{if(d>=todayStr)SLOTS_CACHE[d]=dates[d];});
     localStorage.setItem('rire_slots',JSON.stringify(SLOTS_CACHE));
+    localStorage.setItem('rire_weekly_slots',JSON.stringify(WEEKLY_SLOTS));
   }catch(e){
     SLOTS_CACHE=JSON.parse(localStorage.getItem('rire_slots')||'{}');
+    WEEKLY_SLOTS=JSON.parse(localStorage.getItem('rire_weekly_slots')||'{}');
   }
 }
 async function saveSlotsToSheet(){
   try{
-    await gasPost({action:'saveSlots',slots:SLOTS_CACHE,adminToken:ADMIN_TOKEN});
+    await gasPost({action:'saveSlots',slots:{dates:SLOTS_CACHE,weekly:WEEKLY_SLOTS},adminToken:ADMIN_TOKEN});
     localStorage.setItem('rire_slots',JSON.stringify(SLOTS_CACHE));
-  }catch(e){localStorage.setItem('rire_slots',JSON.stringify(SLOTS_CACHE));}
+    localStorage.setItem('rire_weekly_slots',JSON.stringify(WEEKLY_SLOTS));
+  }catch(e){
+    localStorage.setItem('rire_slots',JSON.stringify(SLOTS_CACHE));
+    localStorage.setItem('rire_weekly_slots',JSON.stringify(WEEKLY_SLOTS));
+  }
 }
 
 function getRequiredSlotsClient(startTime,duration){
@@ -486,6 +516,18 @@ function getRequiredSlotsClient(startTime,duration){
 function canStartBookingAt(slots,startTime,duration,bookedTimes){
   const required=getRequiredSlotsClient(startTime,duration);
   return required.every(t=>slots.includes(t)&&!bookedTimes.includes(t));
+}
+
+function applySlotsPayload(payload){
+  if(!payload)return;
+  if(payload.dates||payload.weekly){
+    SLOTS_CACHE=payload.dates||{};
+    WEEKLY_SLOTS=payload.weekly||WEEKLY_SLOTS;
+  }else{
+    SLOTS_CACHE=payload;
+  }
+  localStorage.setItem('rire_slots',JSON.stringify(SLOTS_CACHE));
+  localStorage.setItem('rire_weekly_slots',JSON.stringify(WEEKLY_SLOTS));
 }
 
 // ============================================================
@@ -652,8 +694,7 @@ async function submitBooking(){
   try{
     const result=await gasPost({action:'createBooking',booking});
     const saved=result.booking||booking;
-    SLOTS_CACHE=result.slots||SLOTS_CACHE;
-    localStorage.setItem('rire_slots',JSON.stringify(SLOTS_CACHE));
+    applySlotsPayload(result.slots);
     try{
       const b=JSON.parse(localStorage.getItem('rire_bookings')||'[]');
       b.push(saved);
@@ -734,8 +775,7 @@ async function executeCancel(){
 
   try{
     const result=await gasPost({action:'cancelBooking',id:info.id,cancelToken:info.token});
-    SLOTS_CACHE=result.slots||SLOTS_CACHE;
-    localStorage.setItem('rire_slots',JSON.stringify(SLOTS_CACHE));
+    applySlotsPayload(result.slots);
     const bookings=JSON.parse(localStorage.getItem('rire_bookings')||'[]');
     localStorage.setItem('rire_bookings',JSON.stringify(bookings.filter(b=>String(b.id)!==String(info.id))));
     document.getElementById('cancelDetail').innerHTML=`<p style="text-align:center;color:#7ab87a;font-size:14px;padding:20px;">✅ キャンセルが完了しました。<br>またのご利用をお待ちしております。</p>`;
@@ -771,31 +811,72 @@ async function adminLogin(){
 }
 function loadAdminData(){
   document.getElementById('adminDatePicker').value=fmtDate(today);
-  loadSlotsFromSheet().then(()=>loadSlots());
+  loadSlotsFromSheet().then(()=>{loadWeeklySlots();loadSlots();});
   renderBookings();
+}
+
+function renderSlotGrid(slots,onToggle,onAllOn,onAllOff,extraButton){
+  const all=allSlotTimes();
+  return `
+    <div class="slot-grid">${all.map(t=>`<div class="slot-item ${slots.includes(t)?'on':'off'}" onclick="${onToggle}('${t}',this)">${t}<span class="slot-item-status">${slots.includes(t)?'受付中':'休'}</span></div>`).join('')}</div>
+    <div class="slot-actions">
+      <button class="btn-sm btn-sm-outline" onclick="${onAllOn}()">全て受付中</button>
+      <button class="btn-sm btn-sm-outline" onclick="${onAllOff}()">全て休</button>
+      ${extraButton||''}
+    </div>`;
+}
+
+function loadWeeklySlots(){
+  const dow=document.getElementById('weeklyDayPicker').value;
+  const slots=WEEKLY_SLOTS[dow]||[];
+  document.getElementById('weeklySlotManager').innerHTML=renderSlotGrid(slots,'toggleWeeklySlot','setAllWeeklySlotsOn','setAllWeeklySlotsOff','');
+}
+function toggleWeeklySlot(time,el){
+  const dow=document.getElementById('weeklyDayPicker').value;
+  const slots=WEEKLY_SLOTS[dow]||[];
+  const idx=slots.indexOf(time);
+  if(idx>=0){slots.splice(idx,1);el.classList.replace('on','off');el.querySelector('.slot-item-status').textContent='休';}
+  else{slots.push(time);slots.sort();el.classList.replace('off','on');el.querySelector('.slot-item-status').textContent='受付中';}
+  WEEKLY_SLOTS[dow]=slots;
+  saveSlotsToSheet();
+  renderCal();
+}
+function setAllWeeklySlotsOn(){
+  WEEKLY_SLOTS[document.getElementById('weeklyDayPicker').value]=allSlotTimes();
+  saveSlotsToSheet();loadWeeklySlots();renderCal();
+}
+function setAllWeeklySlotsOff(){
+  WEEKLY_SLOTS[document.getElementById('weeklyDayPicker').value]=[];
+  saveSlotsToSheet();loadWeeklySlots();renderCal();
 }
 
 function loadSlots(){
   const dateStr=document.getElementById('adminDatePicker').value;if(!dateStr)return;
   const slots=getSlots(dateStr);
-  const all=[];for(let h=9;h<20;h++){all.push(`${String(h).padStart(2,'0')}:00`);all.push(`${String(h).padStart(2,'0')}:30`);}
+  const isOverride=Object.prototype.hasOwnProperty.call(SLOTS_CACHE,dateStr);
+  const note=isOverride?'この日は個別設定を使用中です。':'この日は曜日ごとの基本枠を表示中です。変更すると、この日だけ個別設定になります。';
   document.getElementById('slotManager').innerHTML=`
-    <div class="slot-grid">${all.map(t=>`<div class="slot-item ${slots.includes(t)?'on':'off'}" onclick="toggleSlot('${dateStr}','${t}',this)">${t}<span class="slot-item-status">${slots.includes(t)?'受付中':'休'}</span></div>`).join('')}</div>
-    <div class="slot-actions">
-      <button class="btn-sm btn-sm-outline" onclick="setAllSlots('${dateStr}',true)">全て受付中</button>
-      <button class="btn-sm btn-sm-outline" onclick="setAllSlots('${dateStr}',false)">全て休</button>
-    </div>`;
+    <p class="note" style="margin-bottom:10px;">${note}</p>
+    ${renderSlotGrid(slots,`toggleSlot.bind(null,'${dateStr}')`,`setAllSlotsOn.bind(null,'${dateStr}')`,`setAllSlotsOff.bind(null,'${dateStr}')`,isOverride?`<button class="btn-sm btn-sm-outline" onclick="clearDateOverride('${dateStr}')">曜日設定に戻す</button>`:'')}`;
 }
 function toggleSlot(dateStr,time,el){
-  const slots=SLOTS_CACHE[dateStr]||[];const idx=slots.indexOf(time);
+  const slots=Object.prototype.hasOwnProperty.call(SLOTS_CACHE,dateStr)?SLOTS_CACHE[dateStr].slice():getSlots(dateStr).slice();
+  const idx=slots.indexOf(time);
   if(idx>=0){slots.splice(idx,1);el.classList.replace('on','off');el.querySelector('.slot-item-status').textContent='休';}
   else{slots.push(time);slots.sort();el.classList.replace('off','on');el.querySelector('.slot-item-status').textContent='受付中';}
-  SLOTS_CACHE[dateStr]=slots;saveSlotsToSheet();
+  SLOTS_CACHE[dateStr]=slots;saveSlotsToSheet();renderCal();
 }
-function setAllSlots(dateStr,on){
-  if(on){const a=[];for(let h=9;h<20;h++){a.push(`${String(h).padStart(2,'0')}:00`);a.push(`${String(h).padStart(2,'0')}:30`);}SLOTS_CACHE[dateStr]=a;}
-  else SLOTS_CACHE[dateStr]=[];
-  saveSlotsToSheet();loadSlots();
+function setAllSlotsOn(dateStr){
+  SLOTS_CACHE[dateStr]=allSlotTimes();
+  saveSlotsToSheet();loadSlots();renderCal();
+}
+function setAllSlotsOff(dateStr){
+  SLOTS_CACHE[dateStr]=[];
+  saveSlotsToSheet();loadSlots();renderCal();
+}
+function clearDateOverride(dateStr){
+  delete SLOTS_CACHE[dateStr];
+  saveSlotsToSheet();loadSlots();renderCal();
 }
 
 // 予約一覧（GASから取得 → localStorageフォールバック）
