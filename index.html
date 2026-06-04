@@ -866,7 +866,7 @@ async function submitBooking(){
     document.getElementById('screenDone').classList.add('active');
     document.getElementById('stepsBar').style.display='none';
     window.scrollTo(0,0);
-    if(!notificationOk(result.notification)){
+    if(result.notification&&!notificationOk(result.notification)){
       alert('予約は確定しましたが、通知が一部送信できていない可能性があります。\n管理画面の設定タブで通知設定を確認してください。\n\n'+notificationSummary(result.notification));
     }
   }catch(e){
