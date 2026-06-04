@@ -47,6 +47,12 @@ body { background: var(--cream); font-family: 'Noto Sans JP', sans-serif; color:
 .detail-toggle { font-size: 10px; color: var(--rose); cursor: pointer; margin-top: 3px; display: inline-flex; align-items: center; gap: 3px; }
 .detail-toggle::after { content: '▼'; font-size: 8px; transition: transform 0.2s; }
 .detail-toggle.open::after { transform: rotate(180deg); }
+.selected-menu-summary { display: none; background: var(--white); border: 1px solid var(--rose-light); border-radius: 10px; padding: 12px 14px; margin: 12px 0; }
+.selected-menu-summary.show { display: block; }
+.selected-menu-title { font-size: 12px; color: var(--brown); margin-bottom: 7px; }
+.selected-menu-item { font-size: 12px; color: var(--text); padding: 5px 0; border-bottom: 1px solid var(--warm); display: flex; justify-content: space-between; gap: 10px; }
+.selected-menu-item:last-of-type { border-bottom: none; }
+.selected-menu-total { font-size: 12px; color: var(--rose-dark); text-align: right; margin-top: 8px; }
 .cal-nav-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .cal-month-label { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: var(--brown); letter-spacing: 0.08em; }
 .cal-nav-btn { background: none; border: 1px solid var(--warm); border-radius: 6px; color: var(--rose); cursor: pointer; font-size: 16px; padding: 4px 12px; transition: all 0.15s; }
@@ -168,6 +174,7 @@ textarea.form-input { resize: vertical; min-height: 72px; }
         <div class="cat-tab" onclick="filterCat(this,'tone')">トーンヌール</div>
       </div>
       <div id="menuList"></div>
+      <div class="selected-menu-summary" id="selectedMenuSummary"></div>
       <button class="btn-primary" id="btn1" onclick="goStep(2)" disabled>次へ　→　日時を選ぶ</button>
       <p class="note">※ 料金はすべて税込表示です</p>
     </div>
@@ -411,7 +418,7 @@ const MENUS = [
 // 状態管理
 // ============================================================
 let COUPONS = JSON.parse(localStorage.getItem('rire_coupons') || '[]');
-let sel = {menuId:'',menuName:'',catLabel:'',duration:'',price:0,coupon:null,date:'',time:''};
+let sel = {menus:[],menuId:'',menuName:'',catLabel:'',duration:'',price:0,coupon:null,date:'',time:''};
 const today = new Date();
 let calYear = today.getFullYear(), calMonth = today.getMonth();
 const DOWS = ['日','月','火','水','木','金','土'];
@@ -424,8 +431,44 @@ let ADMIN_TOKEN = sessionStorage.getItem('rire_admin_token') || '';
 // ============================================================
 function fmtDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function fmtPrice(p){return '¥'+p.toLocaleString()+' 税込';}
+function parseDurationMinutes(duration){return parseInt(duration,10)||30;}
+function fmtDuration(mins){return `${mins}分`;}
 function parseDateStr(s){return new Date(s+'T00:00:00');}
 function getActiveCoupon(id){const now=new Date();return COUPONS.find(c=>c.menuId===id&&new Date(c.from)<=now&&new Date(c.to)>=now)||null;}
+function menuBookingPrice(menu){const coupon=getActiveCoupon(menu.id);return coupon?coupon.price:menu.price;}
+function fmtTotalPrice(total,hasCoursePrice){
+  if(total===0&&hasCoursePrice)return 'コース価格';
+  if(hasCoursePrice)return `${fmtPrice(total)} + コース価格`;
+  return fmtPrice(total);
+}
+function selectedMenuDetails(){
+  return sel.menus.map(menu=>({menu,coupon:getActiveCoupon(menu.id),price:menuBookingPrice(menu)}));
+}
+function updateSelectionTotals(){
+  const details=selectedMenuDetails();
+  const totalMinutes=details.reduce((sum,d)=>sum+parseDurationMinutes(d.menu.duration),0);
+  const totalPrice=details.reduce((sum,d)=>sum+d.price,0);
+  const labels=[...new Set(details.map(d=>d.menu.catLabel))];
+  sel.menuId=details.map(d=>d.menu.id).join(',');
+  sel.menuName=details.map(d=>d.menu.name).join(' / ');
+  sel.catLabel=labels.join(' / ');
+  sel.duration=details.length?fmtDuration(totalMinutes):'';
+  sel.price=totalPrice;
+  sel.coupon=details.map(d=>d.coupon).filter(Boolean);
+  document.getElementById('btn1').disabled=details.length===0;
+  renderSelectedMenuSummary(details,totalMinutes,totalPrice);
+}
+function renderSelectedMenuSummary(details,totalMinutes,totalPrice){
+  const el=document.getElementById('selectedMenuSummary');
+  if(!el)return;
+  if(!details.length){el.classList.remove('show');el.innerHTML='';return;}
+  const hasCoursePrice=details.some(d=>d.menu.price===0);
+  el.classList.add('show');
+  el.innerHTML=`
+    <div class="selected-menu-title">選択中のメニュー</div>
+    ${details.map(d=>`<div class="selected-menu-item"><span>${escapeHtml(d.menu.name)}</span><span>${escapeHtml(d.menu.duration)} / ${d.menu.price===0?'コース価格':fmtPrice(d.price)}</span></div>`).join('')}
+    <div class="selected-menu-total">合計 ${fmtDuration(totalMinutes)}　${fmtTotalPrice(totalPrice,hasCoursePrice)}</div>`;
+}
 function allSlotTimes(){const all=[];for(let h=9;h<20;h++){all.push(`${String(h).padStart(2,'0')}:00`);all.push(`${String(h).padStart(2,'0')}:30`);}return all;}
 function getSlots(d){
   if(Object.prototype.hasOwnProperty.call(SLOTS_CACHE,d))return SLOTS_CACHE[d]||[];
@@ -461,7 +504,7 @@ async function gasGet(params){
 }
 async function checkGasVersion(){
   const data=await gasGet({action:'version'});
-  if(data.version!=='2026-06-04-weekly-slots-v1')throw new Error('GASのコードが古い可能性があります');
+  if(data.version!=='2026-06-04-multi-menu-v1')throw new Error('GASのコードが古い可能性があります');
   return data;
 }
 async function gasPost(body){
@@ -537,8 +580,9 @@ function renderMenus(cat){
   const list=document.getElementById('menuList');list.innerHTML='';
   MENUS.filter(m=>cat==='all'||m.cat===cat).forEach(m=>{
     const coupon=getActiveCoupon(m.id);
+    const selected=sel.menus.some(x=>x.id===m.id);
     const div=document.createElement('div');
-    div.className='menu-card'+(sel.menuId===m.id?' selected':'');
+    div.className='menu-card'+(selected?' selected':'');
     div.dataset.id=m.id;
     div.onclick=e=>{if(e.target.classList.contains('detail-toggle'))return;selectMenu(m.id);};
     let btns='';
@@ -561,14 +605,17 @@ function renderMenus(cat){
       ${m.parts?`<div class="menu-detail" id="parts_${m.id}">${m.parts}</div>`:''}`;
     list.appendChild(div);
   });
+  updateSelectionTotals();
 }
 function filterCat(el,cat){document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderMenus(cat);}
 function selectMenu(id){
-  document.querySelectorAll('.menu-card').forEach(c=>c.classList.remove('selected'));
-  document.querySelector(`.menu-card[data-id="${id}"]`)?.classList.add('selected');
   const m=MENUS.find(x=>x.id===id);
-  Object.assign(sel,{menuId:id,menuName:m.name,catLabel:m.catLabel,duration:m.duration,price:m.price,coupon:getActiveCoupon(id)});
-  document.getElementById('btn1').disabled=false;
+  const idx=sel.menus.findIndex(x=>x.id===id);
+  if(idx>=0)sel.menus.splice(idx,1);
+  else sel.menus.push(m);
+  document.querySelector(`.menu-card[data-id="${id}"]`)?.classList.toggle('selected',idx<0);
+  updateSelectionTotals();
+  clearDateTime();
 }
 function toggleDetail(id){document.getElementById('detail_'+id)?.classList.toggle('open');event.currentTarget?.classList.toggle('open');event.stopPropagation();}
 function toggleParts(id){document.getElementById('parts_'+id)?.classList.toggle('open');document.getElementById('pt-'+id)?.classList.toggle('open');event.stopPropagation();}
@@ -662,11 +709,12 @@ function fillConfirm(){
   const[y,m,d]=sel.date.split('-');
   const dow=parseDateStr(sel.date).getDay();
   const dateLabel=`${y}年${parseInt(m)}月${parseInt(d)}日（${DOWS[dow]}）`;
-  const couponLine=sel.coupon?`<br><span style="font-size:11px;color:var(--rose)">🏷 ${escapeHtml(sel.coupon.label)} ${fmtPrice(sel.coupon.price)}</span>`:'';
-  document.getElementById('c_menu').textContent=sel.menuName;
+  const details=selectedMenuDetails();
+  const hasCoursePrice=details.some(d=>d.menu.price===0);
+  document.getElementById('c_menu').innerHTML=details.map(d=>`${escapeHtml(d.menu.name)}<br><span style="font-size:11px;color:var(--muted)">${escapeHtml(d.menu.duration)} / ${d.menu.price===0?'コース価格':fmtPrice(d.price)}${d.coupon?`　🏷 ${escapeHtml(d.coupon.label)}`:''}</span>`).join('<br>');
   document.getElementById('c_date').textContent=`${dateLabel} ${sel.time}〜`;
   document.getElementById('c_dur').textContent=sel.duration;
-  document.getElementById('c_price').innerHTML=fmtPrice(sel.price)+couponLine;
+  document.getElementById('c_price').textContent=fmtTotalPrice(sel.price,hasCoursePrice);
   document.getElementById('c_name').textContent=document.getElementById('f_name').value;
   document.getElementById('c_tel2').textContent=document.getElementById('f_tel').value;
   const item=document.getElementById('f_item').value;
@@ -686,6 +734,7 @@ async function submitBooking(){
   const booking={
     date:sel.date,time:sel.time,menuId:sel.menuId,menuName:sel.menuName,
     catLabel:sel.catLabel,duration:sel.duration,price:sel.price,coupon:sel.coupon,
+    menus:selectedMenuDetails().map(d=>({id:d.menu.id,name:d.menu.name,catLabel:d.menu.catLabel,duration:d.menu.duration,price:d.price,coupon:d.coupon?d.coupon.label:''})),
     name:document.getElementById('f_name').value,kana:document.getElementById('f_kana').value,
     tel:document.getElementById('f_tel').value,first:document.getElementById('f_first').value,
     item:document.getElementById('f_item').value,note:document.getElementById('f_note').value,
@@ -760,7 +809,7 @@ async function checkCancelParam(){
 
     const[y,m,d]=booking.date.split('-');const dow=parseDateStr(booking.date).getDay();
     document.getElementById('cancelDetail').innerHTML=`
-      <div class="confirm-row"><span class="confirm-label">メニュー</span><span class="confirm-value">${escapeHtml(booking.menuName)}</span></div>
+      <div class="confirm-row"><span class="confirm-label">メニュー</span><span class="confirm-value">${escapeHtml(booking.menuName).replace(/ \/ /g,'<br>')}</span></div>
       <div class="confirm-row"><span class="confirm-label">日時</span><span class="confirm-value">${escapeHtml(y)}年${parseInt(m)}月${parseInt(d)}日（${DOWS[dow]}）${escapeHtml(booking.time)}〜</span></div>
       <div class="confirm-row"><span class="confirm-label">お名前</span><span class="confirm-value">${escapeHtml(booking.name)}</span></div>`;
     document.getElementById('cancelBtn').dataset.bookingJson=JSON.stringify(booking);
@@ -1003,8 +1052,8 @@ function testNotification(){
 function exportBookings(){
   let bookings=JSON.parse(localStorage.getItem('rire_bookings')||'[]');
   if(!bookings.length){alert('予約データがありません');return;}
-  const header=['日付','時間','メニュー','お名前','ふりがな','電話番号','来店経験','ご要望','予約日時'].join(',');
-  const rows=bookings.map(b=>[b.date,b.time,b.menuName,b.name,b.kana,b.tel,b.first,b.note||'',b.createdAt].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
+  const header=['日付','時間','メニュー','所要時間','料金','お名前','ふりがな','電話番号','来店経験','ご要望','予約日時'].join(',');
+  const rows=bookings.map(b=>[b.date,b.time,b.menuName,b.duration,b.price,b.name,b.kana,b.tel,b.first,b.note||'',b.createdAt].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['﻿'+[header,...rows].join('\n')],{type:'text/csv;charset=utf-8;'}));
   a.download=`rire_bookings_${fmtDate(today)}.csv`;a.click();
