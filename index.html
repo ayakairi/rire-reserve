@@ -118,7 +118,11 @@ textarea.form-input { resize: vertical; min-height: 72px; }
 .slot-item.on { background: var(--rose); color: white; border-color: var(--rose); }
 .slot-item.off { background: var(--warm); color: #bbb; }
 .slot-item-status { font-size: 9px; }
-.slot-actions { display: flex; gap: 8px; }
+.slot-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.slot-save-status { font-size: 12px; color: var(--muted); margin-top: 10px; text-align: center; }
+.slot-save-status.dirty { color: var(--rose); }
+.slot-save-status.saved { color: #5c9a66; }
+.slot-save-status.error { color: var(--danger); }
 .btn-sm { padding: 8px 14px; border-radius: 6px; font-size: 12px; font-family: 'Noto Sans JP', sans-serif; font-weight: 300; cursor: pointer; transition: all 0.15s; border: none; }
 .btn-sm-outline { background: none; border: 1px solid var(--warm); color: var(--muted); }
 .btn-sm-outline:hover { border-color: var(--rose); color: var(--rose); }
@@ -447,6 +451,7 @@ let WEEKLY_SLOTS = {};
 let ADMIN_TOKEN = sessionStorage.getItem('rire_admin_token') || '';
 let PUBLIC_CONFIG = { liffId: '' };
 let CUSTOMER_LINE = { userId: '', displayName: '', pictureUrl: '', linked: false, error: '' };
+let SLOT_DIRTY = { weekly: false, date: false };
 
 // ============================================================
 // ユーティリティ
@@ -618,9 +623,11 @@ async function saveSlotsToSheet(){
     await gasPost({action:'saveSlots',slots:{dates:SLOTS_CACHE,weekly:WEEKLY_SLOTS},adminToken:ADMIN_TOKEN});
     localStorage.setItem('rire_slots',JSON.stringify(SLOTS_CACHE));
     localStorage.setItem('rire_weekly_slots',JSON.stringify(WEEKLY_SLOTS));
+    return {ok:true};
   }catch(e){
     localStorage.setItem('rire_slots',JSON.stringify(SLOTS_CACHE));
     localStorage.setItem('rire_weekly_slots',JSON.stringify(WEEKLY_SLOTS));
+    throw e;
   }
 }
 
@@ -947,7 +954,15 @@ async function executeCancel(){
 // 管理者
 // ============================================================
 function showAdminLogin(){document.getElementById('customerView').style.display='none';document.getElementById('adminLogin').style.display='block';document.getElementById('adminView').style.display='none';}
-function showCustomer(){document.getElementById('customerView').style.display='block';document.getElementById('adminLogin').style.display='none';document.getElementById('adminView').style.display='none';}
+function hasUnsavedSlotChanges(){return SLOT_DIRTY.weekly||SLOT_DIRTY.date;}
+function showCustomer(){
+  if(document.getElementById('adminView').style.display==='block'&&hasUnsavedSlotChanges()){
+    if(!confirm('保存していない空き枠設定があります。保存せずに予約ページへ戻りますか？'))return;
+  }
+  document.getElementById('customerView').style.display='block';
+  document.getElementById('adminLogin').style.display='none';
+  document.getElementById('adminView').style.display='none';
+}
 async function adminLogin(){
   const pw=document.getElementById('adminPw').value;
   try{
@@ -971,7 +986,7 @@ function loadAdminData(){
   renderBookings();
 }
 
-function renderSlotGrid(slots,onToggle,onAllOn,onAllOff,extraButton){
+function renderSlotGrid(slots,onToggle,onAllOn,onAllOff,saveFn,statusId,extraButton){
   const all=allSlotTimes();
   return `
     <div class="slot-grid">${all.map(t=>`<div class="slot-item ${slots.includes(t)?'on':'off'}" onclick="${onToggle}('${t}',this)">${t}<span class="slot-item-status">${slots.includes(t)?'受付中':'休'}</span></div>`).join('')}</div>
@@ -979,13 +994,22 @@ function renderSlotGrid(slots,onToggle,onAllOn,onAllOff,extraButton){
       <button class="btn-sm btn-sm-outline" onclick="${onAllOn}()">全て受付中</button>
       <button class="btn-sm btn-sm-outline" onclick="${onAllOff}()">全て休</button>
       ${extraButton||''}
-    </div>`;
+      <button class="btn-sm btn-sm-primary" onclick="${saveFn}()">この設定を保存</button>
+    </div>
+    <div class="slot-save-status" id="${statusId}">時間を変更したら「この設定を保存」を押してください。</div>`;
 }
 
 function loadWeeklySlots(){
   const dow=document.getElementById('weeklyDayPicker').value;
   const slots=WEEKLY_SLOTS[dow]||[];
-  document.getElementById('weeklySlotManager').innerHTML=renderSlotGrid(slots,'toggleWeeklySlot','setAllWeeklySlotsOn','setAllWeeklySlotsOff','');
+  SLOT_DIRTY.weekly=false;
+  document.getElementById('weeklySlotManager').innerHTML=renderSlotGrid(slots,'toggleWeeklySlot','setAllWeeklySlotsOn','setAllWeeklySlotsOff','saveWeeklySlots','weeklySaveStatus','');
+}
+function setSlotStatus(id,text,type){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.textContent=text;
+  el.className='slot-save-status'+(type?' '+type:'');
 }
 function toggleWeeklySlot(time,el){
   const dow=document.getElementById('weeklyDayPicker').value;
@@ -994,16 +1018,32 @@ function toggleWeeklySlot(time,el){
   if(idx>=0){slots.splice(idx,1);el.classList.replace('on','off');el.querySelector('.slot-item-status').textContent='休';}
   else{slots.push(time);slots.sort();el.classList.replace('off','on');el.querySelector('.slot-item-status').textContent='受付中';}
   WEEKLY_SLOTS[dow]=slots;
-  saveSlotsToSheet();
+  SLOT_DIRTY.weekly=true;
+  setSlotStatus('weeklySaveStatus','未保存です。必ず「この設定を保存」を押してください。','dirty');
   renderCal();
 }
 function setAllWeeklySlotsOn(){
   WEEKLY_SLOTS[document.getElementById('weeklyDayPicker').value]=allSlotTimes();
-  saveSlotsToSheet();loadWeeklySlots();renderCal();
+  SLOT_DIRTY.weekly=true;loadWeeklySlots();SLOT_DIRTY.weekly=true;setSlotStatus('weeklySaveStatus','未保存です。必ず「この設定を保存」を押してください。','dirty');renderCal();
 }
 function setAllWeeklySlotsOff(){
   WEEKLY_SLOTS[document.getElementById('weeklyDayPicker').value]=[];
-  saveSlotsToSheet();loadWeeklySlots();renderCal();
+  SLOT_DIRTY.weekly=true;loadWeeklySlots();SLOT_DIRTY.weekly=true;setSlotStatus('weeklySaveStatus','未保存です。必ず「この設定を保存」を押してください。','dirty');renderCal();
+}
+async function saveWeeklySlots(){
+  setSlotStatus('weeklySaveStatus','保存中です...','');
+  try{
+    await saveSlotsToSheet();
+    SLOT_DIRTY.weekly=false;
+    setSlotStatus('weeklySaveStatus','保存しました。この曜日の基本枠は今後も自動で表示されます。','saved');
+    await loadSlotsFromSheet();
+    loadWeeklySlots();
+    loadSlots();
+    renderCal();
+    setSlotStatus('weeklySaveStatus','保存しました。この曜日の基本枠は今後も自動で表示されます。','saved');
+  }catch(e){
+    setSlotStatus('weeklySaveStatus','保存できませんでした。GASの再デプロイ、または通信状態を確認してください。','error');
+  }
 }
 
 function loadSlots(){
@@ -1013,22 +1053,38 @@ function loadSlots(){
   const note=isOverride?'この日は個別設定を使用中です。':'この日は曜日ごとの基本枠を表示中です。変更すると、この日だけ個別設定になります。';
   document.getElementById('slotManager').innerHTML=`
     <p class="note" style="margin-bottom:10px;">${note}</p>
-    ${renderSlotGrid(slots,`toggleSlot.bind(null,'${dateStr}')`,`setAllSlotsOn.bind(null,'${dateStr}')`,`setAllSlotsOff.bind(null,'${dateStr}')`,isOverride?`<button class="btn-sm btn-sm-outline" onclick="clearDateOverride('${dateStr}')">曜日設定に戻す</button>`:'')}`;
+    ${renderSlotGrid(slots,`toggleSlot.bind(null,'${dateStr}')`,`setAllSlotsOn.bind(null,'${dateStr}')`,`setAllSlotsOff.bind(null,'${dateStr}')`,`saveDateSlots.bind(null,'${dateStr}')`,'dateSaveStatus',isOverride?`<button class="btn-sm btn-sm-outline" onclick="clearDateOverride('${dateStr}')">曜日設定に戻す</button>`:'')}`;
 }
 function toggleSlot(dateStr,time,el){
   const slots=Object.prototype.hasOwnProperty.call(SLOTS_CACHE,dateStr)?SLOTS_CACHE[dateStr].slice():getSlots(dateStr).slice();
   const idx=slots.indexOf(time);
   if(idx>=0){slots.splice(idx,1);el.classList.replace('on','off');el.querySelector('.slot-item-status').textContent='休';}
   else{slots.push(time);slots.sort();el.classList.replace('off','on');el.querySelector('.slot-item-status').textContent='受付中';}
-  SLOTS_CACHE[dateStr]=slots;saveSlotsToSheet();renderCal();
+  SLOTS_CACHE[dateStr]=slots;SLOT_DIRTY.date=true;setSlotStatus('dateSaveStatus','未保存です。必ず「この設定を保存」を押してください。','dirty');renderCal();
 }
 function setAllSlotsOn(dateStr){
   SLOTS_CACHE[dateStr]=allSlotTimes();
-  saveSlotsToSheet();loadSlots();renderCal();
+  SLOT_DIRTY.date=true;loadSlots();SLOT_DIRTY.date=true;setSlotStatus('dateSaveStatus','未保存です。必ず「この設定を保存」を押してください。','dirty');renderCal();
 }
 function setAllSlotsOff(dateStr){
   SLOTS_CACHE[dateStr]=[];
-  saveSlotsToSheet();loadSlots();renderCal();
+  SLOT_DIRTY.date=true;loadSlots();SLOT_DIRTY.date=true;setSlotStatus('dateSaveStatus','未保存です。必ず「この設定を保存」を押してください。','dirty');renderCal();
+}
+async function saveDateSlots(dateStr){
+  SLOTS_CACHE[dateStr]=Object.prototype.hasOwnProperty.call(SLOTS_CACHE,dateStr)?SLOTS_CACHE[dateStr]:getSlots(dateStr).slice();
+  setSlotStatus('dateSaveStatus','保存中です...','');
+  try{
+    await saveSlotsToSheet();
+    SLOT_DIRTY.date=false;
+    setSlotStatus('dateSaveStatus','保存しました。この日だけの特別設定として反映されます。','saved');
+    await loadSlotsFromSheet();
+    loadSlots();
+    renderHolidayList();
+    renderCal();
+    setSlotStatus('dateSaveStatus','保存しました。この日だけの特別設定として反映されます。','saved');
+  }catch(e){
+    setSlotStatus('dateSaveStatus','保存できませんでした。GASの再デプロイ、または通信状態を確認してください。','error');
+  }
 }
 function clearDateOverride(dateStr){
   delete SLOTS_CACHE[dateStr];
