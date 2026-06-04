@@ -101,6 +101,8 @@ textarea.form-input { resize: vertical; min-height: 72px; }
 .btn-primary { width: 100%; padding: 14px; background: var(--rose); color: white; border: none; border-radius: 8px; font-size: 14px; font-family: 'Noto Sans JP', sans-serif; font-weight: 300; letter-spacing: 0.1em; cursor: pointer; transition: background 0.2s; }
 .btn-primary:hover { background: var(--rose-dark); }
 .btn-primary:disabled { background: #ddd; cursor: default; }
+.btn-line { display: block; width: 100%; padding: 13px; background: #06c755; color: white; border: none; border-radius: 8px; font-size: 13px; font-family: 'Noto Sans JP', sans-serif; font-weight: 300; letter-spacing: 0.05em; text-align: center; text-decoration: none; margin: 0 0 10px; }
+.btn-line:hover { background: #05ad4a; }
 .btn-back { width: 100%; padding: 12px; background: none; color: var(--muted); border: 1px solid var(--warm); border-radius: 8px; font-size: 13px; font-family: 'Noto Sans JP', sans-serif; font-weight: 300; cursor: pointer; margin-bottom: 8px; transition: border-color 0.15s; }
 .btn-back:hover { border-color: var(--muted); }
 .note { font-size: 11px; color: var(--muted); text-align: center; margin-top: 8px; font-weight: 300; line-height: 1.8; }
@@ -210,6 +212,8 @@ textarea.form-input { resize: vertical; min-height: 72px; }
       <div class="form-group"><label class="form-label">お名前<span class="req">*</span></label><input class="form-input" type="text" placeholder="山田 花子" id="f_name" oninput="checkForm()"></div>
       <div class="form-group"><label class="form-label">ふりがな<span class="req">*</span></label><input class="form-input" type="text" placeholder="やまだ はなこ" id="f_kana" oninput="checkForm()"></div>
       <div class="form-group"><label class="form-label">携帯番号<span class="req">*</span></label><input class="form-input" type="tel" placeholder="090-0000-0000" id="f_tel" oninput="checkForm()"></div>
+      <div class="form-group"><label class="form-label">メールアドレス<span class="req">*</span></label><input class="form-input" type="email" placeholder="example@email.com" id="f_email" oninput="checkForm()"></div>
+      <p class="note" id="lineLinkStatus" style="margin-top:-6px;margin-bottom:12px;"></p>
       <div class="form-group"><label class="form-label">ご来店経験<span class="req">*</span></label><select class="form-input" id="f_first" onchange="checkForm()"><option value="">選択してください</option><option value="初回">はい、初めてです</option><option value="リピート">リピートです</option></select></div>
       <div class="form-group"><label class="form-label">気になる商品・お持ち帰りご希望のアイテム</label><input class="form-input" type="text" id="f_item" placeholder="例：美容液、化粧水など（任意）"></div>
       <div class="form-group"><label class="form-label">ご要望・ご質問など</label><textarea class="form-input" id="f_note" placeholder="アレルギー・気になる点などあればご記入ください"></textarea></div>
@@ -228,10 +232,11 @@ textarea.form-input { resize: vertical; min-height: 72px; }
         <div class="confirm-row"><span class="confirm-label">料金</span><span class="confirm-value" id="c_price"></span></div>
         <div class="confirm-row"><span class="confirm-label">お名前</span><span class="confirm-value" id="c_name"></span></div>
         <div class="confirm-row"><span class="confirm-label">携帯番号</span><span class="confirm-value" id="c_tel2"></span></div>
+        <div class="confirm-row"><span class="confirm-label">メール</span><span class="confirm-value" id="c_email"></span></div>
         <div class="confirm-row" id="c_item_row" style="display:none"><span class="confirm-label">ご希望商品</span><span class="confirm-value" id="c_item2"></span></div>
         <div class="confirm-row" id="c_note_row" style="display:none"><span class="confirm-label">ご要望</span><span class="confirm-value" id="c_note2"></span></div>
       </div>
-      <p class="note" style="margin-bottom:14px">予約確定後、LINEにてご確認のメッセージをお送りします。<br>キャンセルは予約日3日前までLINEのリンクからお手続きください。<br>それ以降はお電話にてご連絡ください（0537-26-9228）</p>
+      <p class="note" style="margin-bottom:14px">予約確定後、確認メールをお送りします。<br>キャンセルは予約日3日前までメール内のリンクからお手続きください。<br>それ以降はお電話にてご連絡ください（0537-26-9228）</p>
       <button class="btn-back" onclick="goStep(3)">← 情報を修正する</button>
       <button class="btn-primary" id="btn4" onclick="submitBooking()">予約を確定する</button>
     </div>
@@ -252,11 +257,12 @@ textarea.form-input { resize: vertical; min-height: 72px; }
       <div class="complete-wrap">
         <div class="complete-icon">🌿</div>
         <div class="complete-title">ご予約ありがとうございます</div>
-        <p class="complete-text">予約が確定しました。<br>LINEにて確認メッセージをお送りしています。<br><br>当日はお気をつけてお越しください。<br>スタッフ一同、心よりお待ちしております。</p>
+        <p class="complete-text">予約が確定しました。<br>確認メールをお送りしています。<br><br>当日はお気をつけてお越しください。<br>スタッフ一同、心よりお待ちしております。</p>
         <br>
         <div id="cancelLinkWrap" style="margin-bottom:12px;"></div>
+        <div id="lineShareWrap"></div>
         <p class="note">rire リール　静岡県菊川市加茂5209 パピーラ202<br>TEL: 0537-26-9228　駐車場5台</p>
-        <p class="note" style="margin-top:8px">※ キャンセルは予約日3日前までLINEのリンクから可能です。<br>それ以降はお電話にてご連絡ください。</p>
+        <p class="note" style="margin-top:8px">※ キャンセルは予約日3日前までメール内のリンクから可能です。<br>それ以降はお電話にてご連絡ください。</p>
       </div>
     </div>
   </div>
@@ -313,6 +319,13 @@ textarea.form-input { resize: vertical; min-height: 72px; }
         <input type="date" class="admin-date-picker" id="adminDatePicker" onchange="loadSlots()">
         <div id="slotManager"><p class="empty-msg">日付を選択してください</p></div>
       </div>
+      <div class="admin-section">
+        <div class="admin-section-title">🏖 休業日・祝日をまとめて設定する</div>
+        <p class="note" style="margin-top:-4px;margin-bottom:12px;">年末年始・祝日・臨時休業日など、完全に予約を受けない日を追加できます。</p>
+        <input type="date" class="admin-date-picker" id="holidayDate">
+        <button class="btn-sm btn-sm-primary" onclick="addHolidayDate()" style="width:100%;padding:12px;">休業日として追加</button>
+        <div id="holidayList" style="margin-top:12px;"></div>
+      </div>
     </div>
 
     <!-- 予約一覧 -->
@@ -360,10 +373,15 @@ textarea.form-input { resize: vertical; min-height: 72px; }
           <span class="settings-label">LINE ユーザーID / グループID</span>
           <input class="settings-input" type="text" id="lineUserId" placeholder="GASのスクリプトプロパティで設定">
         </div>
+        <div class="settings-row">
+          <span class="settings-label">LIFF ID（お客様LINE連携）</span>
+          <input class="settings-input" type="text" id="liffId" placeholder="例：2000000000-AbCdEfGh">
+        </div>
         <br>
-        <p class="note" style="text-align:left;margin-bottom:12px">※ LINEトークン・ユーザーIDはセキュリティのため<br>GASのスクリプトプロパティへ直接設定することを推奨します。</p>
+        <p class="note" style="text-align:left;margin-bottom:12px">※ LINEトークン・ユーザーIDはセキュリティのため<br>GASのスクリプトプロパティへ直接設定することを推奨します。<br>※ LIFF IDを設定すると、お客様のLINEへ予約完了通知・2日前リマインドを送れます。</p>
         <button class="btn-sm btn-sm-primary" onclick="saveSettings()">設定を保存</button>
         <button class="btn-sm btn-sm-outline" onclick="testNotification()" style="margin-left:8px;">通知テスト送信</button>
+        <button class="btn-sm btn-sm-outline" onclick="setupReminderTrigger()" style="margin-left:8px;">2日前リマインドを有効化</button>
       </div>
       <div class="admin-section">
         <div class="admin-section-title">🗂️ データ管理</div>
@@ -373,11 +391,13 @@ textarea.form-input { resize: vertical; min-height: 72px; }
   </div>
 </div>
 
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
 // ============================================================
 // 設定
 // ============================================================
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzxdQrXBPunUX3NczKydic7izmXvT3bjVBLijkZxpfjoyN2HkEry1WfIDgPRWZGlvpGAQ/exec';
+const APP_VERSION = '2026-06-04-liff-v1';
 
 // ============================================================
 // メニューデータ
@@ -425,6 +445,8 @@ const DOWS = ['日','月','火','水','木','金','土'];
 let SLOTS_CACHE = {};
 let WEEKLY_SLOTS = {};
 let ADMIN_TOKEN = sessionStorage.getItem('rire_admin_token') || '';
+let PUBLIC_CONFIG = { liffId: '' };
+let CUSTOMER_LINE = { userId: '', displayName: '', pictureUrl: '', linked: false, error: '' };
 
 // ============================================================
 // ユーティリティ
@@ -479,18 +501,28 @@ function escapeHtml(v){
   return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function notificationOk(notification){
-  return !!(notification&&(notification.ok||notification.email?.ok||notification.line?.ok));
+  if(!notification)return false;
+  const salonOk=!!(notification.salon?.ok||notification.email?.ok||notification.line?.ok);
+  const customerOk=!!(notification.customerEmail?.ok||notification.customerLine?.ok);
+  return salonOk&&customerOk;
 }
 function notificationSummary(notification){
   if(!notification)return '通知結果が返ってきませんでした。';
   const parts=[];
-  if(notification.email?.ok)parts.push('メール送信OK');
-  else if(notification.email?.skipped)parts.push('メール未設定');
-  else if(notification.email?.error)parts.push('メール失敗: '+notification.email.error);
-  if(notification.line?.ok)parts.push('LINE送信OK');
+  if(notification.email?.ok)parts.push('サロンメールOK');
+  else if(notification.email?.skipped)parts.push('サロンメール未設定');
+  else if(notification.email?.error)parts.push('サロンメール失敗: '+notification.email.error);
+  if(notification.line?.ok)parts.push('サロンLINE OK');
   else if(notification.line?.skipped)parts.push('LINE未設定');
   else if(notification.line?.status)parts.push('LINE失敗: HTTP '+notification.line.status);
   else if(notification.line?.error)parts.push('LINE失敗: '+notification.line.error);
+  if(notification.customerEmail?.ok)parts.push('お客様メールOK');
+  else if(notification.customerEmail?.error)parts.push('お客様メール失敗: '+notification.customerEmail.error);
+  else if(notification.customerEmail?.skipped)parts.push('お客様メール未送信');
+  if(notification.customerLine?.ok)parts.push('お客様LINE OK');
+  else if(notification.customerLine?.status)parts.push('お客様LINE失敗: HTTP '+notification.customerLine.status);
+  else if(notification.customerLine?.error)parts.push('お客様LINE失敗: '+notification.customerLine.error);
+  else if(notification.customerLine?.skipped)parts.push('お客様LINE未連携');
   return parts.join(' / ')||'通知未設定';
 }
 
@@ -504,7 +536,7 @@ async function gasGet(params){
 }
 async function checkGasVersion(){
   const data=await gasGet({action:'version'});
-  if(data.version!=='2026-06-04-multi-menu-v1')throw new Error('GASのコードが古い可能性があります');
+  if(data.version!==APP_VERSION)throw new Error('GASのコードが古い可能性があります');
   return data;
 }
 async function gasPost(body){
@@ -513,6 +545,54 @@ async function gasPost(body){
   const data=await res.json();
   if(data&&data.ok===false)throw new Error(data.error||'処理に失敗しました');
   return data;
+}
+
+async function loadPublicConfig(){
+  try{
+    const data=await gasGet({action:'getPublicConfig'});
+    PUBLIC_CONFIG.liffId=data.liffId||'';
+  }catch(e){
+    PUBLIC_CONFIG.liffId='';
+  }
+}
+
+async function initLiff(){
+  if(!PUBLIC_CONFIG.liffId||!window.liff)return;
+  const params=new URLSearchParams(location.search);
+  if(params.get('admin')||params.get('cancel'))return;
+  try{
+    await liff.init({liffId:PUBLIC_CONFIG.liffId});
+    if(!liff.isLoggedIn()){
+      liff.login({redirectUri:location.href});
+      return;
+    }
+    const profile=await liff.getProfile();
+    CUSTOMER_LINE={
+      userId:profile.userId||'',
+      displayName:profile.displayName||'',
+      pictureUrl:profile.pictureUrl||'',
+      linked:!!profile.userId,
+      error:''
+    };
+    renderLineLinkStatus();
+  }catch(e){
+    CUSTOMER_LINE.error=String(e&&e.message?e.message:e);
+    renderLineLinkStatus();
+  }
+}
+
+function renderLineLinkStatus(){
+  const el=document.getElementById('lineLinkStatus');
+  if(!el)return;
+  if(CUSTOMER_LINE.linked){
+    el.textContent='LINE連携済みです。予約完了通知と2日前リマインドをLINEにもお送りします。';
+    el.style.color='var(--rose)';
+  }else if(PUBLIC_CONFIG.liffId){
+    el.textContent='LINE連携を確認中です。通常予約はこのまま進められます。';
+    el.style.color='var(--muted)';
+  }else{
+    el.textContent='';
+  }
 }
 
 // ============================================================
@@ -559,6 +639,27 @@ function getRequiredSlotsClient(startTime,duration){
 function canStartBookingAt(slots,startTime,duration,bookedTimes){
   const required=getRequiredSlotsClient(startTime,duration);
   return required.every(t=>slots.includes(t)&&!bookedTimes.includes(t));
+}
+
+function buildLineShareUrl(booking,cancelUrl){
+  const menuLines=(booking.menus&&booking.menus.length?booking.menus:[{name:booking.menuName,duration:booking.duration,price:booking.price}])
+    .map(m=>`・${m.name}（${m.duration}${Number(m.price)?` / ${fmtPrice(Number(m.price))}`:' / コース価格'}）`)
+    .join('\n');
+  const text=[
+    '【rire予約内容】',
+    `日時：${booking.date} ${booking.time}〜`,
+    'メニュー：',
+    menuLines,
+    `合計時間：${booking.duration}`,
+    `合計金額：${Number(booking.price)?fmtPrice(Number(booking.price)):'コース価格'}`,
+    '',
+    'キャンセルはこちら（予約日3日前まで）：',
+    cancelUrl,
+    '',
+    'rire リール',
+    'TEL: 0537-26-9228'
+  ].join('\n');
+  return `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
 }
 
 function applySlotsPayload(payload){
@@ -689,8 +790,8 @@ function clearDateTime(){sel.date='';sel.time='';document.getElementById('btn2')
 // フォーム
 // ============================================================
 function checkForm(){
-  const n=document.getElementById('f_name').value,k=document.getElementById('f_kana').value,t=document.getElementById('f_tel').value,f=document.getElementById('f_first').value;
-  document.getElementById('btn3').disabled=!(n&&k&&t&&f);
+  const n=document.getElementById('f_name').value,k=document.getElementById('f_kana').value,t=document.getElementById('f_tel').value,e=document.getElementById('f_email').value,f=document.getElementById('f_first').value;
+  document.getElementById('btn3').disabled=!(n&&k&&t&&e&&e.includes('@')&&f);
 }
 
 // ============================================================
@@ -717,6 +818,7 @@ function fillConfirm(){
   document.getElementById('c_price').textContent=fmtTotalPrice(sel.price,hasCoursePrice);
   document.getElementById('c_name').textContent=document.getElementById('f_name').value;
   document.getElementById('c_tel2').textContent=document.getElementById('f_tel').value;
+  document.getElementById('c_email').textContent=document.getElementById('f_email').value;
   const item=document.getElementById('f_item').value;
   document.getElementById('c_item_row').style.display=item?'flex':'none';
   if(item)document.getElementById('c_item2').textContent=item;
@@ -737,7 +839,11 @@ async function submitBooking(){
     menus:selectedMenuDetails().map(d=>({id:d.menu.id,name:d.menu.name,catLabel:d.menu.catLabel,duration:d.menu.duration,price:d.price,coupon:d.coupon?d.coupon.label:''})),
     name:document.getElementById('f_name').value,kana:document.getElementById('f_kana').value,
     tel:document.getElementById('f_tel').value,first:document.getElementById('f_first').value,
+    email:document.getElementById('f_email').value,
     item:document.getElementById('f_item').value,note:document.getElementById('f_note').value,
+    customerLineUserId:CUSTOMER_LINE.userId,
+    customerLineName:CUSTOMER_LINE.displayName,
+    pageUrl:location.href.split('?')[0],
     createdAt:new Date().toISOString()
   };
   try{
@@ -752,15 +858,16 @@ async function submitBooking(){
 
     const cancelPayload={id:saved.id,date:saved.date,time:saved.time,token:result.cancelToken||saved.cancelToken};
     const cancelToken=btoa(JSON.stringify(cancelPayload));
-    const cancelUrl=`${location.href.split('?')[0]}?cancel=${encodeURIComponent(cancelToken)}`;
+    const cancelUrl=result.cancelUrl||`${location.href.split('?')[0]}?cancel=${encodeURIComponent(cancelToken)}`;
     document.getElementById('cancelLinkWrap').innerHTML=`<a href="${escapeHtml(cancelUrl)}" style="font-size:12px;color:var(--rose);text-decoration:underline;">🔗 キャンセルはこちら（3日前まで）</a>`;
+    document.getElementById('lineShareWrap').innerHTML=`<a class="btn-line" href="${escapeHtml(buildLineShareUrl(saved,cancelUrl))}" target="_blank" rel="noopener">LINEに予約内容を送る</a>`;
 
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     document.getElementById('screenDone').classList.add('active');
     document.getElementById('stepsBar').style.display='none';
     window.scrollTo(0,0);
     if(!notificationOk(result.notification)){
-      alert('予約は確定しましたが、サロン通知が送信できていない可能性があります。\n管理画面の設定タブで通知設定を確認してください。\n\n'+notificationSummary(result.notification));
+      alert('予約は確定しましたが、通知が一部送信できていない可能性があります。\n管理画面の設定タブで通知設定を確認してください。\n\n'+notificationSummary(result.notification));
     }
   }catch(e){
     alert(e.message==='selected slot is no longer available'?'選んだメニューの所要時間分の連続枠が足りないか、先に予約が入りました。別の日時を選んでください。':`予約を確定できませんでした。\n${e.message}`);
@@ -860,7 +967,7 @@ async function adminLogin(){
 }
 function loadAdminData(){
   document.getElementById('adminDatePicker').value=fmtDate(today);
-  loadSlotsFromSheet().then(()=>{loadWeeklySlots();loadSlots();});
+  loadSlotsFromSheet().then(()=>{loadWeeklySlots();loadSlots();renderHolidayList();});
   renderBookings();
 }
 
@@ -925,7 +1032,25 @@ function setAllSlotsOff(dateStr){
 }
 function clearDateOverride(dateStr){
   delete SLOTS_CACHE[dateStr];
-  saveSlotsToSheet();loadSlots();renderCal();
+  saveSlotsToSheet();loadSlots();renderHolidayList();renderCal();
+}
+function addHolidayDate(){
+  const dateStr=document.getElementById('holidayDate').value;
+  if(!dateStr){alert('休業日にする日付を選んでください');return;}
+  SLOTS_CACHE[dateStr]=[];
+  saveSlotsToSheet();document.getElementById('holidayDate').value='';
+  renderHolidayList();loadSlots();renderCal();
+}
+function renderHolidayList(){
+  const list=document.getElementById('holidayList');
+  if(!list)return;
+  const days=Object.keys(SLOTS_CACHE).filter(d=>Array.isArray(SLOTS_CACHE[d])&&SLOTS_CACHE[d].length===0).sort();
+  if(!days.length){list.innerHTML='<p class="empty-msg" style="padding:10px;">休業日はまだありません</p>';return;}
+  list.innerHTML=days.map(d=>`<div class="booking-item"><div class="booking-meta">${escapeHtml(d)}</div><button class="btn-sm btn-sm-outline" onclick="clearHolidayDate('${escapeHtml(d)}')">解除</button></div>`).join('');
+}
+function clearHolidayDate(dateStr){
+  delete SLOTS_CACHE[dateStr];
+  saveSlotsToSheet();renderHolidayList();loadSlots();renderCal();
 }
 
 // 予約一覧（GASから取得 → localStorageフォールバック）
@@ -950,9 +1075,38 @@ async function renderBookings(){
       <div class="booking-name">${escapeHtml(b.name)}（${escapeHtml(b.kana)}）</div>
       <div class="booking-menu">${escapeHtml(b.catLabel)} / ${escapeHtml(b.menuName)}　${escapeHtml(b.duration)}</div>
       <div class="booking-meta" style="margin-top:2px">📞 ${escapeHtml(b.tel)}${b.note?' 📝 '+escapeHtml(b.note):''}</div>
-      <div class="booking-actions"><button class="btn-sm btn-sm-danger" onclick="deleteBooking('${escapeHtml(b.id)}')">削除</button></div>
+      <div class="booking-actions"><button class="btn-sm btn-sm-outline" onclick='editBooking(${JSON.stringify(b).replace(/'/g,'&#39;')})'>編集</button> <button class="btn-sm btn-sm-danger" onclick="deleteBooking('${escapeHtml(b.id)}')">削除</button></div>
     </div>`;
   }).join('');
+}
+
+async function editBooking(booking){
+  const date=prompt('予約日を変更します（例：2026-06-10）',booking.date||'');
+  if(date===null)return;
+  const time=prompt('開始時間を変更します（例：10:00）',booking.time||'');
+  if(time===null)return;
+  const menuName=prompt('メニュー名を変更します',booking.menuName||'');
+  if(menuName===null)return;
+  const duration=prompt('所要時間を変更します（例：120分）',booking.duration||'');
+  if(duration===null)return;
+  const priceText=prompt('料金を変更します（数字のみ。コース価格は0）',String(booking.price||0));
+  if(priceText===null)return;
+  const name=prompt('お名前を変更します',booking.name||'');
+  if(name===null)return;
+  const tel=prompt('電話番号を変更します',booking.tel||'');
+  if(tel===null)return;
+  const email=prompt('メールアドレスを変更します',booking.email||'');
+  if(email===null)return;
+  const note=prompt('ご要望を変更します',booking.note||'');
+  if(note===null)return;
+  try{
+    await gasPost({action:'updateBooking',adminToken:ADMIN_TOKEN,id:booking.id,updates:{date,time,menuName,duration,price:parseInt(priceText,10)||0,name,tel,email,note}});
+    alert('予約を更新しました');
+    await loadSlotsFromSheet();
+    renderBookings();renderCal();
+  }catch(e){
+    alert(`予約を更新できませんでした。\n${e.message}`);
+  }
 }
 
 async function deleteBooking(id){
@@ -1024,10 +1178,12 @@ function saveSettings(){
   const email=document.getElementById('notifEmail').value;
   const lineToken=document.getElementById('lineToken').value;
   const lineUserId=document.getElementById('lineUserId').value;
+  const liffId=document.getElementById('liffId').value;
   if(pw)settings.adminPassword=pw;
   if(email)settings.email=email;
   if(lineToken)settings.lineToken=lineToken;
   if(lineUserId)settings.lineUserId=lineUserId;
+  if(liffId)settings.liffId=liffId;
   if(Object.keys(settings).length>0){
     gasPost({action:'saveSettings',settings,adminToken:ADMIN_TOKEN}).then(()=>{
       document.getElementById('newPw').value='';
@@ -1044,6 +1200,12 @@ function testNotification(){
     if(notificationOk(result.notification))alert('通知テストを送信しました。\n'+summary);
     else alert('通知テストを送信できませんでした。\n'+summary+'\n\nGASのスクリプトプロパティを確認してください。');
   }).catch(e=>alert(`通知テストに失敗しました。\n${e.message}`));
+}
+
+function setupReminderTrigger(){
+  gasPost({action:'setupReminderTrigger',adminToken:ADMIN_TOKEN}).then(()=>{
+    alert('2日前リマインドを有効化しました。\n毎日朝9時ごろに、2日後の予約へ確認メールを送ります。');
+  }).catch(e=>alert(`2日前リマインドを有効化できませんでした。\n${e.message}`));
 }
 
 // ============================================================
@@ -1065,6 +1227,9 @@ function exportBookings(){
 (async function(){
   renderMenus('facial');
   renderCal();
+  await loadPublicConfig();
+  renderLineLinkStatus();
+  initLiff();
   try{await loadSlotsFromSheet();renderCal();}catch(e){}
   const params=new URLSearchParams(location.search);
   if(params.get('cancel'))checkCancelParam();
